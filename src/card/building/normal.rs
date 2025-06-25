@@ -1,6 +1,6 @@
-use super::super::{Value, ValueInt, VictInt};
-use crate::action::produce_or_barter::StockInt;
-use strum::EnumIter;
+use super::super::{CardInfo, ValueInt, VictInt};
+use crate::{action::produce_or_barter::StockInt, card::EMPTY_ENUM_ERR};
+use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
 pub enum NormalBuilding {
@@ -24,7 +24,7 @@ pub enum NormalBuilding {
     Diner,
 }
 
-impl Value for NormalBuilding {
+impl CardInfo for NormalBuilding {
     fn value(&self) -> ValueInt {
         match self {
             Self::FurnitureFactory
@@ -68,5 +68,11 @@ impl Value for NormalBuilding {
 
     fn total_n(&self, _: usize) -> StockInt {
         1
+    }
+}
+
+impl Default for NormalBuilding {
+    fn default() -> Self {
+        Self::iter().next().expect(EMPTY_ENUM_ERR)
     }
 }

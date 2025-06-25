@@ -1,6 +1,6 @@
-use super::{Value, ValueInt, VictInt};
+use super::{CardInfo, EMPTY_ENUM_ERR, ValueInt, VictInt};
 use crate::action::produce_or_barter::StockInt;
-use strum::EnumIter;
+use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
 pub enum Product2 {
@@ -15,7 +15,7 @@ pub enum Product2 {
     Mirror,
 }
 
-impl Value for Product2 {
+impl CardInfo for Product2 {
     fn value(&self) -> ValueInt {
         match self {
             Self::Egg => 3,
@@ -33,5 +33,11 @@ impl Value for Product2 {
 
     fn total_n(&self, _: usize) -> StockInt {
         1
+    }
+}
+
+impl Default for Product2 {
+    fn default() -> Self {
+        Self::iter().next().expect(EMPTY_ENUM_ERR)
     }
 }

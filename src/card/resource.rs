@@ -1,7 +1,6 @@
+use super::{CardInfo, EMPTY_ENUM_ERR, ValueInt, VictInt};
 use crate::action::produce_or_barter::StockInt;
-use strum::EnumIter;
-
-use super::{Value, ValueInt, VictInt};
+use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
 pub enum Resource {
@@ -12,7 +11,7 @@ pub enum Resource {
     Ore,
 }
 
-impl Value for Resource {
+impl CardInfo for Resource {
     fn value(&self) -> ValueInt {
         match self {
             Self::Dung => -1,
@@ -32,5 +31,11 @@ impl Value for Resource {
             Self::Barley | Self::Wood => [2, 3, 3][idx],
             Self::Ore => [2, 2, 3][idx],
         }
+    }
+}
+
+impl Default for Resource {
+    fn default() -> Self {
+        Self::iter().next().expect(EMPTY_ENUM_ERR)
     }
 }

@@ -1,6 +1,6 @@
-use super::super::{Value, ValueInt, VictInt};
-use crate::action::produce_or_barter::StockInt;
-use strum::EnumIter;
+use super::super::{CardInfo, ValueInt, VictInt};
+use crate::{action::produce_or_barter::StockInt, card::EMPTY_ENUM_ERR};
+use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
 pub enum BasicBuilding {
@@ -14,7 +14,7 @@ pub enum BasicBuilding {
     Sawmill,
 }
 
-impl Value for BasicBuilding {
+impl CardInfo for BasicBuilding {
     fn value(&self) -> ValueInt {
         match self {
             Self::Smelter
@@ -34,5 +34,11 @@ impl Value for BasicBuilding {
 
     fn total_n(&self, _: usize) -> StockInt {
         1
+    }
+}
+
+impl Default for BasicBuilding {
+    fn default() -> Self {
+        Self::iter().next().expect(EMPTY_ENUM_ERR)
     }
 }

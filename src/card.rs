@@ -8,16 +8,19 @@ use building::{Building, basic::BasicBuilding, normal::NormalBuilding, special::
 use product1::Product1;
 use product2::Product2;
 use resource::Resource;
+use strum::{EnumIter, IntoEnumIterator};
+
+const EMPTY_ENUM_ERR: &str = "empty enum...";
 
 pub type ValueInt = i8;
 type VictInt = u8;
-pub trait Value: Sized {
+pub trait CardInfo: Sized {
     fn value(&self) -> ValueInt;
     fn victory_points(&self) -> VictInt;
     fn total_n(&self, member: usize) -> StockInt;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
 pub enum Card {
     Resource(Resource),
     Product1(Product1),
@@ -26,7 +29,7 @@ pub enum Card {
     VictoryPoint,
 }
 
-impl Value for Card {
+impl CardInfo for Card {
     fn value(&self) -> ValueInt {
         match self {
             Self::Resource(x) => x.value(),
@@ -91,5 +94,20 @@ impl From<NormalBuilding> for Card {
 impl From<SpecialBuilding> for Card {
     fn from(special: SpecialBuilding) -> Self {
         Building::from(special).into()
+    }
+}
+
+impl Default for Card {
+    fn default() -> Self {
+        Self::iter()
+            .next()
+            .map(|card| match card {
+                Self::Resource(_) => Self::Resource(Resource::default()),
+                Self::Product1(_) => Self::Product1(Product1::default()),
+                Self::Product2(_) => Self::Product2(Product2::default()),
+                Self::Building(_) => Self::Building(Building::default()),
+                Self::VictoryPoint => Self::VictoryPoint,
+            })
+            .expect(EMPTY_ENUM_ERR)
     }
 }

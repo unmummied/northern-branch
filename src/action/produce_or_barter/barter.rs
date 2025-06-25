@@ -1,5 +1,5 @@
 use super::StockInt;
-use crate::card::{Card, Value, ValueInt};
+use crate::card::{Card, CardInfo, ValueInt};
 use std::collections::BTreeMap;
 
 #[derive(Debug)]
