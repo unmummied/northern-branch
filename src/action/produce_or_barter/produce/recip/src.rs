@@ -1,4 +1,4 @@
-use super::super::super::RecipInt;
+use super::super::super::StockInt;
 use crate::card::Card;
 use std::{
     collections::BTreeMap,
@@ -12,7 +12,7 @@ pub struct Src {
 
 impl<T, I> From<I> for Src
 where
-    I: IntoIterator<Item = (T, (RecipInt, RecipInt))>,
+    I: IntoIterator<Item = (T, (StockInt, StockInt))>,
     T: Into<Card>,
 {
     fn from(iterable: I) -> Self {
@@ -35,18 +35,18 @@ where
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Usage {
-    pub consumed: RecipInt,
-    pub retained: RecipInt,
+    pub consumed: StockInt,
+    pub retained: StockInt,
 }
 
 impl Usage {
-    pub const fn needed(self) -> RecipInt {
+    pub const fn needed(self) -> StockInt {
         self.consumed + self.retained
     }
 }
 
-impl From<(RecipInt, RecipInt)> for Usage {
-    fn from((consumed, retained): (RecipInt, RecipInt)) -> Self {
+impl From<(StockInt, StockInt)> for Usage {
+    fn from((consumed, retained): (StockInt, StockInt)) -> Self {
         Self { consumed, retained }
     }
 }

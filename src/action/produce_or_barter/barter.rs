@@ -1,4 +1,4 @@
-use super::RecipInt;
+use super::StockInt;
 use crate::card::{Card, Value, ValueInt};
 use std::collections::BTreeMap;
 
@@ -10,10 +10,10 @@ pub enum Barter {
     },
     Give1TakeN {
         give: Card,
-        take: BTreeMap<Card, RecipInt>,
+        take: BTreeMap<Card, StockInt>,
     },
     GiveNTake1 {
-        give: BTreeMap<Card, RecipInt>,
+        give: BTreeMap<Card, StockInt>,
         take: Card,
     },
     // GiveNTakeN,
@@ -35,7 +35,7 @@ impl Barter {
 }
 
 #[allow(clippy::cast_possible_wrap)]
-fn btree_map_value(map: &BTreeMap<Card, RecipInt>) -> ValueInt {
+fn btree_map_value(map: &BTreeMap<Card, StockInt>) -> ValueInt {
     map.iter().fold(0, |mut acc, (card, n)| {
         acc += card.value() * *n as ValueInt;
         acc

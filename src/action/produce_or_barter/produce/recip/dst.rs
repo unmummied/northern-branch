@@ -1,15 +1,15 @@
-use super::super::super::RecipInt;
+use super::super::super::StockInt;
 use crate::card::Card;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Dst {
-    dst: BTreeMap<Card, RecipInt>,
+    dst: BTreeMap<Card, StockInt>,
 }
 
 impl<T, I> From<I> for Dst
 where
-    I: IntoIterator<Item = (T, RecipInt)>,
+    I: IntoIterator<Item = (T, StockInt)>,
     T: Into<Card>,
 {
     fn from(iterable: I) -> Self {

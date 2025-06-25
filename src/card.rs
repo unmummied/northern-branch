@@ -3,6 +3,7 @@ pub mod product1;
 pub mod product2;
 pub mod resource;
 
+use crate::action::produce_or_barter::StockInt;
 use building::{Building, basic::BasicBuilding, normal::NormalBuilding, special::SpecialBuilding};
 use product1::Product1;
 use product2::Product2;
@@ -13,6 +14,7 @@ type VictInt = u8;
 pub trait Value: Sized {
     fn value(&self) -> ValueInt;
     fn victory_points(&self) -> VictInt;
+    fn total_n(&self, member: usize) -> StockInt;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -42,6 +44,16 @@ impl Value for Card {
             Self::Product2(x) => x.victory_points(),
             Self::Building(x) => x.victory_points(),
             Self::VictoryPoint => 1,
+        }
+    }
+
+    fn total_n(&self, member: usize) -> StockInt {
+        match self {
+            Self::Resource(resource) => resource.total_n(member),
+            Self::Product1(product1) => product1.total_n(member),
+            Self::Product2(product2) => product2.total_n(member),
+            Self::Building(building) => building.total_n(member),
+            Self::VictoryPoint => 11,
         }
     }
 }

@@ -1,6 +1,8 @@
 use super::super::{Value, ValueInt, VictInt};
+use crate::action::produce_or_barter::StockInt;
+use strum::EnumIter;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
 pub enum SpecialBuilding {
     Exchange,
     Realtor,
@@ -23,5 +25,9 @@ impl Value for SpecialBuilding {
             Self::Realtor | Self::Market => 2,
             Self::TradingHouse => 4,
         }
+    }
+
+    fn total_n(&self, _: usize) -> StockInt {
+        1
     }
 }

@@ -3,6 +3,7 @@ pub mod normal;
 pub mod special;
 
 use super::{Value, ValueInt, VictInt};
+use crate::action::produce_or_barter::StockInt;
 use basic::BasicBuilding;
 use normal::NormalBuilding;
 use special::SpecialBuilding;
@@ -28,6 +29,14 @@ impl Value for Building {
             Self::Basic(b) => b.victory_points(),
             Self::Normal(b) => b.victory_points(),
             Self::Special(b) => b.victory_points(),
+        }
+    }
+
+    fn total_n(&self, member: usize) -> StockInt {
+        match self {
+            Self::Basic(basic_building) => basic_building.total_n(member),
+            Self::Normal(normal_building) => normal_building.total_n(member),
+            Self::Special(special_building) => special_building.total_n(member),
         }
     }
 }

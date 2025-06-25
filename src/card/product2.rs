@@ -1,6 +1,8 @@
 use super::{Value, ValueInt, VictInt};
+use crate::action::produce_or_barter::StockInt;
+use strum::EnumIter;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
 pub enum Product2 {
     Egg,
     Concrete,
@@ -27,5 +29,9 @@ impl Value for Product2 {
 
     fn victory_points(&self) -> VictInt {
         0
+    }
+
+    fn total_n(&self, _: usize) -> StockInt {
+        1
     }
 }

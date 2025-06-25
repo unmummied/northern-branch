@@ -4,7 +4,7 @@ pub mod produce;
 use barter::Barter;
 use produce::Recip;
 
-type RecipInt = u8;
+pub type StockInt = u8;
 
 #[derive(Debug)]
 pub enum ProduceOrBarter<'a, T> {
