@@ -1,8 +1,8 @@
-use super::{CardInfo, EMPTY_ENUM_ERR, ValueInt, VictInt};
-use crate::action::produce_or_barter::StockInt;
-use strum::{EnumIter, IntoEnumIterator};
+use super::{EMPTY_ENUM_ERR, Quantity, Value, ValueInt, VictInt};
+use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
+use strum::{Display, EnumIter, IntoEnumIterator};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter, Display)]
 pub enum Product2 {
     Egg,
     Concrete,
@@ -15,7 +15,7 @@ pub enum Product2 {
     Mirror,
 }
 
-impl CardInfo for Product2 {
+impl Value for Product2 {
     fn value(&self) -> ValueInt {
         match self {
             Self::Egg => 3,
@@ -30,9 +30,12 @@ impl CardInfo for Product2 {
     fn victory_points(&self) -> VictInt {
         0
     }
+}
 
-    fn total_n(&self, _: usize) -> StockInt {
-        1
+impl Quantity for Product2 {
+    fn quantity(&self, population: PopulationInt) -> Result<StockInt, &'static str> {
+        Self::bound_check(population)?;
+        Ok(1)
     }
 }
 

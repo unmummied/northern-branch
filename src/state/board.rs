@@ -1,10 +1,17 @@
 pub mod lane;
 
+use super::PopulationInt;
 use crate::card::{
     Card, building::Building, product1::Product1, product2::Product2, resource::Resource,
 };
 use lane::Lane;
 use rand::Rng;
+use std::{
+    fmt::{self, Display, Formatter},
+    iter,
+};
+
+const CARD_WIDTH: usize = 11;
 
 #[derive(Debug, Default)]
 #[allow(clippy::struct_field_names)]
@@ -16,6 +23,15 @@ pub struct BoardState {
 }
 
 impl BoardState {
+    pub fn new_n(population: PopulationInt) -> Result<Self, &'static str> {
+        let mut res = Self::default();
+        Card::deck(population)?
+            .into_iter()
+            .flat_map(|(card, n)| iter::repeat_n(card, n as _))
+            .for_each(|card| res.discard(card));
+        Ok(res)
+    }
+
     // Getters
     pub const fn resource_lane(&self) -> &Lane<Resource> {
         &self.resource_lane
@@ -46,4 +62,60 @@ impl BoardState {
         self.product2_lane.fill_slots(rng);
         self.building_lane.fill_slots(rng);
     }
+}
+
+impl Display for BoardState {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let width = CARD_WIDTH + 2;
+        writeln!(
+            f,
+            "    {:^width$} {:^width$} {:^width$} {:^width$} {:^width$} | {:^width$} {:^width$}",
+            1, 2, 3, 4, 5, "Deck", "Discard"
+        )?;
+        writeln!(
+            f,
+            "{}",
+            prefix_each_line(
+                &self.building_lane.to_string(),
+                &["    ", "    ", "B:  ", "    ", "    "]
+            )
+        )?;
+        writeln!(
+            f,
+            "{}",
+            prefix_each_line(
+                &self.product2_lane.to_string(),
+                &["    ", "    ", "P2: ", "    ", "    "]
+            )
+        )?;
+        writeln!(
+            f,
+            "{}",
+            prefix_each_line(
+                &self.product1_lane.to_string(),
+                &["    ", "    ", "P1: ", "    ", "    "]
+            )
+        )?;
+        write!(
+            f,
+            "{}",
+            prefix_each_line(
+                &self.resource_lane.to_string(),
+                &["    ", "    ", "R:  ", "    ", "    "]
+            )
+        )?;
+        Ok(())
+    }
+}
+
+#[must_use]
+fn prefix_each_line(text: &str, prefixes: &[&str]) -> String {
+    text.lines()
+        .enumerate()
+        .map(|(i, line)| {
+            let prefix = prefixes.get(i).copied().unwrap_or("");
+            format!("{prefix}{line}")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }

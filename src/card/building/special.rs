@@ -1,8 +1,12 @@
-use super::super::{CardInfo, ValueInt, VictInt};
-use crate::{action::produce_or_barter::StockInt, card::EMPTY_ENUM_ERR};
-use strum::{EnumIter, IntoEnumIterator};
+use super::super::{Value, ValueInt, VictInt};
+use crate::{
+    action::produce_or_barter::StockInt,
+    card::{EMPTY_ENUM_ERR, Quantity},
+    state::PopulationInt,
+};
+use strum::{Display, EnumIter, IntoEnumIterator};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter, Display)]
 pub enum SpecialBuilding {
     Exchange,
     Realtor,
@@ -10,7 +14,7 @@ pub enum SpecialBuilding {
     TradingHouse,
 }
 
-impl CardInfo for SpecialBuilding {
+impl Value for SpecialBuilding {
     fn value(&self) -> ValueInt {
         match self {
             Self::Exchange => 6,
@@ -26,9 +30,12 @@ impl CardInfo for SpecialBuilding {
             Self::TradingHouse => 4,
         }
     }
+}
 
-    fn total_n(&self, _: usize) -> StockInt {
-        1
+impl Quantity for SpecialBuilding {
+    fn quantity(&self, population: PopulationInt) -> Result<StockInt, &'static str> {
+        Self::bound_check(population)?;
+        Ok(1)
     }
 }
 

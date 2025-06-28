@@ -2,11 +2,12 @@ pub mod basic;
 pub mod normal;
 pub mod special;
 
-use super::{CardInfo, EMPTY_ENUM_ERR, ValueInt, VictInt};
-use crate::action::produce_or_barter::StockInt;
+use super::{EMPTY_ENUM_ERR, Quantity, Value, ValueInt, VictInt};
+use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
 use basic::BasicBuilding;
 use normal::NormalBuilding;
 use special::SpecialBuilding;
+use std::fmt::{self, Display, Formatter};
 use strum::{EnumIter, IntoEnumIterator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
@@ -16,28 +17,30 @@ pub enum Building {
     Special(SpecialBuilding),
 }
 
-impl CardInfo for Building {
+impl Value for Building {
     fn value(&self) -> ValueInt {
         match self {
-            Self::Basic(b) => b.value(),
-            Self::Normal(b) => b.value(),
-            Self::Special(b) => b.value(),
+            Self::Basic(basic) => basic.value(),
+            Self::Normal(normal) => normal.value(),
+            Self::Special(special) => special.value(),
         }
     }
 
     fn victory_points(&self) -> VictInt {
         match self {
-            Self::Basic(b) => b.victory_points(),
-            Self::Normal(b) => b.victory_points(),
-            Self::Special(b) => b.victory_points(),
+            Self::Basic(basic) => basic.victory_points(),
+            Self::Normal(normal) => normal.victory_points(),
+            Self::Special(special) => special.victory_points(),
         }
     }
+}
 
-    fn total_n(&self, member: usize) -> StockInt {
+impl Quantity for Building {
+    fn quantity(&self, population: PopulationInt) -> Result<StockInt, &'static str> {
         match self {
-            Self::Basic(basic_building) => basic_building.total_n(member),
-            Self::Normal(normal_building) => normal_building.total_n(member),
-            Self::Special(special_building) => special_building.total_n(member),
+            Self::Basic(basic) => basic.quantity(population),
+            Self::Normal(normal) => normal.quantity(population),
+            Self::Special(special) => special.quantity(population),
         }
     }
 }
@@ -68,5 +71,15 @@ impl Default for Building {
                 Self::Special(_) => Self::Special(SpecialBuilding::default()),
             })
             .expect(EMPTY_ENUM_ERR)
+    }
+}
+
+impl Display for Building {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Self::Basic(basic) => basic.fmt(f),
+            Self::Normal(normal) => normal.fmt(f),
+            Self::Special(special) => special.fmt(f),
+        }
     }
 }

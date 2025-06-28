@@ -1,8 +1,8 @@
-use super::{CardInfo, EMPTY_ENUM_ERR, ValueInt, VictInt};
-use crate::action::produce_or_barter::StockInt;
-use strum::{EnumIter, IntoEnumIterator};
+use super::{EMPTY_ENUM_ERR, Quantity, Value, ValueInt, VictInt};
+use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
+use strum::{Display, EnumIter, IntoEnumIterator};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter, Display)]
 pub enum Resource {
     Dung,
     Clay,
@@ -11,7 +11,7 @@ pub enum Resource {
     Ore,
 }
 
-impl CardInfo for Resource {
+impl Value for Resource {
     fn value(&self) -> ValueInt {
         match self {
             Self::Dung => -1,
@@ -22,15 +22,18 @@ impl CardInfo for Resource {
     fn victory_points(&self) -> VictInt {
         0
     }
+}
 
-    fn total_n(&self, member: usize) -> StockInt {
-        let idx = member.saturating_sub(2);
-        match self {
+impl Quantity for Resource {
+    fn quantity(&self, population: PopulationInt) -> Result<StockInt, &'static str> {
+        Self::bound_check(population)?;
+        let idx = population.saturating_sub(2);
+        Ok(match self {
             Self::Dung => [4, 5, 6][idx],
             Self::Clay => [3, 3, 4][idx],
             Self::Barley | Self::Wood => [2, 3, 3][idx],
             Self::Ore => [2, 2, 3][idx],
-        }
+        })
     }
 }
 
