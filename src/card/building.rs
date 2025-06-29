@@ -17,6 +17,18 @@ pub enum Building {
     Special(SpecialBuilding),
 }
 
+impl Building {
+    pub fn all_iter() -> impl Iterator<Item = Self> {
+        let basics = BasicBuilding::iter();
+        let normals = NormalBuilding::iter();
+        let specials = SpecialBuilding::iter();
+        basics
+            .map(Self::from)
+            .chain(normals.map(Into::<_>::into))
+            .chain(specials.map(Into::<_>::into))
+    }
+}
+
 impl Value for Building {
     fn value(&self) -> ValueInt {
         match self {

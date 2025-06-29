@@ -2,7 +2,7 @@ use super::{EMPTY_ENUM_ERR, Quantity, Value, ValueInt, VictInt};
 use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
 use strum::{Display, EnumIter, IntoEnumIterator};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Display, EnumIter)]
 pub enum Product2 {
     Egg,
     Concrete,

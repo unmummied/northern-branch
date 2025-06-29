@@ -2,14 +2,21 @@ pub mod lane;
 
 use super::PopulationInt;
 use crate::card::{
-    Card, building::Building, product1::Product1, product2::Product2, resource::Resource,
+    Card, Quantity,
+    building::{Building, basic::BasicBuilding},
+    product1::Product1,
+    product2::Product2,
+    resource::Resource,
 };
+use anyhow::anyhow;
 use lane::Lane;
 use rand::Rng;
 use std::{
+    collections::BTreeSet,
     fmt::{self, Display, Formatter},
     iter,
 };
+use strum::IntoEnumIterator;
 
 const CARD_WIDTH: usize = 11;
 
@@ -23,12 +30,27 @@ pub struct BoardState {
 }
 
 impl BoardState {
-    pub fn new_n(population: PopulationInt) -> Result<Self, &'static str> {
-        let mut res = Self::default();
-        Card::deck(population)?
+    pub fn deal<R: Rng>(rng: &mut R, population: PopulationInt) -> anyhow::Result<Self> {
+        let chosen_basics = BasicBuilding::chosen_basics(rng, population);
+        let mut res = Self {
+            resource_lane: Lane::from_slots_only(Resource::iter())?,
+            product1_lane: Lane::new(),
+            product2_lane: Lane::new(),
+            building_lane: Lane::from_discard_pile_unuse_with_init_subslots_and_deck(
+                chosen_basics.map(Into::into),
+                Building::all_iter()
+                    .map(|building| building.quantity(population).map(|n| (building, n)))
+                    .collect::<Result<BTreeSet<_>, _>>()
+                    .map_err(|e| anyhow!(e))?,
+            )?,
+        };
+        Card::deck(population)
+            .map_err(|e| anyhow!(e))?
             .into_iter()
+            .filter(|(card, _)| !card.is_building())
             .flat_map(|(card, n)| iter::repeat_n(card, n as _))
             .for_each(|card| res.discard(card));
+        res.fill_slots(rng);
         Ok(res)
     }
 

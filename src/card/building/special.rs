@@ -6,7 +6,7 @@ use crate::{
 };
 use strum::{Display, EnumIter, IntoEnumIterator};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Display, EnumIter)]
 pub enum SpecialBuilding {
     Exchange,
     Realtor,

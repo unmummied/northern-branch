@@ -3,7 +3,15 @@ pub mod product1;
 pub mod product2;
 pub mod resource;
 
-use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
+use crate::{
+    action::produce_or_barter::StockInt,
+    state::{
+        PopulationInt,
+        queue::{
+            MAXIMUM_PLAYERS_LEN, MINIMUM_PLAYERS_LEN, TOO_FEW_PLAYERS_ERR, TOO_MUCH_PLAYERS_ERR,
+        },
+    },
+};
 use building::{Building, basic::BasicBuilding, normal::NormalBuilding, special::SpecialBuilding};
 use product1::Product1;
 use product2::Product2;
@@ -12,36 +20,32 @@ use std::{
     collections::BTreeMap,
     fmt::{self, Display, Formatter},
 };
-use strum::{EnumIter, IntoEnumIterator};
+use strum::{EnumIs, EnumIter, IntoEnumIterator};
 
 const VICTORY_POINT_DISPLAY: &str = "VP";
 const EMPTY_ENUM_ERR: &str = "empty enum...";
 
 pub type ValueInt = i8;
-type VictInt = u8;
+pub type VictInt = u8;
 pub trait Value: Sized {
     fn value(&self) -> ValueInt;
     fn victory_points(&self) -> VictInt;
 }
 
 pub trait Quantity {
-    const MINIMUM_PLAYERS_LEN: PopulationInt = 2;
-    const MAXIMUM_PLAYERS_LEN: PopulationInt = 4;
-    const TOO_FEW_PLAYERS_ERR: &str = "too few players...";
-    const TOO_MUCH_PLAYERS_ERR: &str = "too mush players...";
     fn bound_check(population: PopulationInt) -> Result<(), &'static str> {
-        if population < Self::MINIMUM_PLAYERS_LEN {
-            return Err(Self::TOO_FEW_PLAYERS_ERR);
+        if population < MINIMUM_PLAYERS_LEN {
+            return Err(TOO_FEW_PLAYERS_ERR);
         }
-        if Self::MAXIMUM_PLAYERS_LEN < population {
-            return Err(Self::TOO_MUCH_PLAYERS_ERR);
+        if MAXIMUM_PLAYERS_LEN < population {
+            return Err(TOO_MUCH_PLAYERS_ERR);
         }
         Ok(())
     }
     fn quantity(&self, population: PopulationInt) -> Result<StockInt, &'static str>;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIs, EnumIter)]
 pub enum Card {
     Resource(Resource),
     Product1(Product1),
@@ -53,19 +57,15 @@ pub enum Card {
 impl Card {
     pub fn deck(population: PopulationInt) -> Result<BTreeMap<Self, StockInt>, &'static str> {
         let resources = Resource::iter();
-        let product1 = Product1::iter();
-        let product2 = Product2::iter();
-        let basic_buildings = BasicBuilding::iter();
-        let normal_buildings = NormalBuilding::iter();
-        let special_buildings = SpecialBuilding::iter();
+        let product1s = Product1::iter();
+        let product2s = Product2::iter();
+        let buildings = Building::all_iter();
 
         resources
             .map(Self::from)
-            .chain(product1.map(Into::<_>::into))
-            .chain(product2.map(Into::<_>::into))
-            .chain(basic_buildings.map(Into::<_>::into))
-            .chain(normal_buildings.map(Into::<_>::into))
-            .chain(special_buildings.map(Into::<_>::into))
+            .chain(product1s.map(Into::<_>::into))
+            .chain(product2s.map(Into::<_>::into))
+            .chain(buildings.map(Into::<_>::into))
             .map(|card| {
                 let n = card.quantity(population)?;
                 Ok((card, n))

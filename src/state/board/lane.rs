@@ -1,43 +1,62 @@
 use super::CARD_WIDTH;
-use crate::action::produce_or_barter::StockInt;
+use crate::{action::produce_or_barter::StockInt, card::building::Building};
+use anyhow::{Context, anyhow};
 use fancy_regex::Regex;
 use rand::{
     Rng,
     distr::{Distribution, weighted::WeightedIndex},
 };
 use std::{
-    collections::BTreeMap,
-    fmt::{self, Display, Formatter},
+    collections::{BTreeMap, BTreeSet},
+    fmt::{self, Debug, Display, Formatter},
 };
+
+const TOO_FEW_CARDS_ERR: &str = "too few cards...";
+const TOO_MUCH_CARDS_ERR: &str = "too much cards...";
 
 #[derive(Debug, Default)]
 pub struct Lane<T> {
-    slots: [(T, StockInt); 5],
-    deck: BTreeMap<T, StockInt>,
-    discard_pile: BTreeMap<T, StockInt>,
+    pub slots: [(T, StockInt); 5],
+    deck: Option<BTreeMap<T, StockInt>>,
+    discard_pile: Option<BTreeMap<T, StockInt>>,
 }
 
-impl<T: Clone + Ord> Lane<T> {
-    // Getters
-    pub const fn slots(&self) -> &[(T, StockInt); 5] {
-        &self.slots
+impl<T: Default + Clone + Ord> Lane<T> {
+    pub fn new() -> Self {
+        Self {
+            slots: Self::default().slots,
+            deck: Some(BTreeMap::default()),
+            discard_pile: Some(BTreeMap::default()),
+        }
     }
-    pub const fn deck(&self) -> &BTreeMap<T, StockInt> {
-        &self.deck
+    pub fn new_discard_pile_unuse() -> Self {
+        Self {
+            slots: Self::default().slots,
+            deck: Some(BTreeMap::default()),
+            discard_pile: None,
+        }
     }
-    pub const fn discard_pile(&self) -> &BTreeMap<T, StockInt> {
-        &self.discard_pile
+    pub fn from_slots_only<I: IntoIterator<Item = T>>(iterable: I) -> anyhow::Result<Self> {
+        let mut iter = iterable.into_iter();
+        Ok(Self {
+            slots: [
+                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
+                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
+                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
+                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
+                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
+            ],
+            deck: None,
+            discard_pile: None,
+        })
     }
 
-    /// Discards the given card by adding it to the `discarded pile`.
-    ///
-    /// If the card is already present, increments its count by 1.
-    /// Otherwise, inserts it with a count of 1.
-    pub fn discard(&mut self, card: T) {
-        self.discard_pile
-            .entry(card)
-            .and_modify(|n| *n += 1)
-            .or_insert(1);
+    // Getters
+    pub const fn deck(&self) -> Option<&BTreeMap<T, StockInt>> {
+        self.deck.as_ref()
+    }
+    pub const fn discard_pile(&self) -> Option<&BTreeMap<T, StockInt>> {
+        self.discard_pile.as_ref()
     }
 
     /// Returns the index of a single empty slot, even if multiple exist.
@@ -49,12 +68,30 @@ impl<T: Clone + Ord> Lane<T> {
             .map(|(i, _)| i)
     }
     /// Returns `true` if the deck is empty.
-    pub fn is_deck_empty(&self) -> bool {
-        self.deck.is_empty()
+    pub fn is_deck_empty(&self) -> Option<bool> {
+        self.deck().map(BTreeMap::is_empty)
     }
     /// Returns `true` if the discard pile is empty.
-    pub fn is_discard_pile_empty(&self) -> bool {
-        self.discard_pile().is_empty()
+    pub fn is_discard_pile_empty(&self) -> Option<bool> {
+        self.discard_pile().map(BTreeMap::is_empty)
+    }
+
+    /// Discards the given card by adding it to the `discarded pile`.
+    ///
+    /// If the card is already present, increments its count by 1.
+    /// Otherwise, inserts it with a count of 1.
+    pub fn discard(&mut self, card: T) {
+        if let Some(map) = self.discard_pile.as_mut() {
+            map.entry(card).and_modify(|n| *n += 1).or_insert(1);
+            return;
+        }
+        if let Some(map) = self.deck.as_mut() {
+            map.entry(card).and_modify(|n| *n += 1).or_insert(1);
+            return;
+        }
+        if let Some(idx) = self.slot_idx(&card) {
+            self.slots[idx].1 += 1;
+        }
     }
 
     /// Returns the index of the slot if the card is already present.
@@ -68,8 +105,9 @@ impl<T: Clone + Ord> Lane<T> {
 
     /// Draw a random card from the deck (and removing it), if the deck is not empty.
     fn draw<R: Rng>(&mut self, rng: &mut R) -> Option<T> {
-        let weights = self.deck.values();
+        let deck = self.deck.as_mut()?;
 
+        let weights = deck.values();
         let dist = WeightedIndex::new(weights).ok()?;
 
         let chosen_idx = dist.sample(rng);
@@ -77,13 +115,13 @@ impl<T: Clone + Ord> Lane<T> {
         // Note: .nth(n) on BTreeMap::keys() is O(n), but acceptable here.
         // because the deck size is expected to remain small.
         // This trades a bit of performance for simplicity and low memory overhead.
-        let chosen = self.deck.keys().nth(chosen_idx).cloned();
+        let chosen = deck.keys().nth(chosen_idx).cloned();
 
         if let Some(ref card) = chosen {
-            if let Some(cnt) = self.deck.get_mut(card) {
+            if let Some(cnt) = deck.get_mut(card) {
                 *cnt = cnt.saturating_sub(1);
                 if *cnt == 0 {
-                    self.deck.remove(card);
+                    deck.remove(card);
                 }
             }
         }
@@ -93,11 +131,11 @@ impl<T: Clone + Ord> Lane<T> {
 
     /// Fill deck by discard pile.
     fn fill_deck(&mut self) {
-        if !self.is_deck_empty() {
+        if !self.is_deck_empty().unwrap_or(true) {
             return;
         }
         self.deck = self.discard_pile.clone();
-        self.discard_pile.clear();
+        self.discard_pile.as_mut().map(BTreeMap::clear);
     }
 
     /// Fill slots from deck.
@@ -107,8 +145,8 @@ impl<T: Clone + Ord> Lane<T> {
     fn fill_slots_from_deck<R: Rng>(&mut self, rng: &mut R) -> bool {
         while let Some(vacant) = self.vacant_slot() {
             if let Some(ref chosen) = self.draw(rng) {
-                if let Some(already_in) = self.slot_idx(chosen) {
-                    self.slots[already_in].1 += 1;
+                if let Some(idx) = self.slot_idx(chosen) {
+                    self.slots[idx].1 += 1;
                 } else {
                     self.slots[vacant] = (chosen.clone(), 1);
                 }
@@ -129,7 +167,40 @@ impl<T: Clone + Ord> Lane<T> {
     }
 }
 
-impl<T: Clone + Display> Display for Lane<T> {
+impl Lane<Building> {
+    /// A constractor for building lane.
+    pub fn from_discard_pile_unuse_with_init_subslots_and_deck<I, J>(
+        subslots: I,
+        buildings_deck: J,
+    ) -> anyhow::Result<Self>
+    where
+        I: IntoIterator<Item = Building>,
+        J: IntoIterator<Item = (Building, StockInt)>,
+    {
+        let subslots = subslots.into_iter();
+        let mut slots = Self::default().slots;
+        let mut chosen = BTreeSet::new();
+        for (idx, basic) in subslots.enumerate() {
+            if slots.len() <= idx {
+                return Err(anyhow!(TOO_MUCH_CARDS_ERR));
+            }
+            slots[idx] = (basic, 1);
+            chosen.insert(basic);
+        }
+        let complement = buildings_deck
+            .into_iter()
+            .filter(|(building, _)| !chosen.contains(building))
+            .collect();
+        Ok(Self {
+            slots,
+            deck: Some(complement),
+            discard_pile: None,
+        })
+    }
+}
+
+impl<T: Default + Clone + Ord + Display> Display for Lane<T> {
+    #[allow(clippy::cast_possible_truncation)]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let width = CARD_WIDTH;
         let upper = format!("+{}-", "-".repeat(width - 2));
@@ -148,27 +219,73 @@ impl<T: Clone + Display> Display for Lane<T> {
             row3s.push(row3);
         }
 
-        writeln!(
+        cnts.push(self.deck().map(BTreeMap::len).unwrap_or_default() as _);
+        row1s.push(String::new());
+        row2s.push("???".into());
+        row3s.push(String::new());
+        cnts.push(self.discard_pile().map(BTreeMap::len).unwrap_or_default() as _);
+        row1s.push(String::new());
+        row2s.push("xxx".into());
+        row3s.push(String::new());
+
+        let is_deck_exist = self.deck().is_some();
+        let is_discard_pile_exist = self.discard_pile().is_some();
+
+        write!(
             f,
-            "{upper} {} {upper} {} {upper} {} {upper} {} {upper} {} |",
+            "{upper} {} {upper} {} {upper} {} {upper} {} {upper} {}",
             cnts[0], cnts[1], cnts[2], cnts[3], cnts[4]
         )?;
-        writeln!(
+        if is_deck_exist {
+            write!(f, " | {upper}{:>2}", cnts[5])?;
+            if is_discard_pile_exist {
+                write!(f, " {upper}{:>2}", cnts[6])?;
+            }
+        }
+        writeln!(f)?;
+        write!(
             f,
-            "|{:<width$}| |{:<width$}| |{:<width$}| |{:<width$}| |{:<width$}| |",
+            "|{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}|",
             row1s[0], row1s[1], row1s[2], row1s[3], row1s[4]
         )?;
-        writeln!(
+        if is_deck_exist {
+            write!(f, " | |{:^width$}|", row1s[5])?;
+            if is_discard_pile_exist {
+                write!(f, " |{:^width$}|", row1s[6])?;
+            }
+        }
+        writeln!(f)?;
+        write!(
             f,
-            "|{:<width$}| |{:<width$}| |{:<width$}| |{:<width$}| |{:<width$}| |",
+            "|{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}|",
             row2s[0], row2s[1], row2s[2], row2s[3], row2s[4]
         )?;
-        writeln!(
+        if is_deck_exist {
+            write!(f, " | |{:^width$}|", row2s[5])?;
+            if is_discard_pile_exist {
+                write!(f, " |{:^width$}|", row2s[6])?;
+            }
+        }
+        writeln!(f)?;
+        write!(
             f,
-            "|{:<width$}| |{:<width$}| |{:<width$}| |{:<width$}| |{:<width$}| |",
+            "|{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}|",
             row3s[0], row3s[1], row3s[2], row3s[3], row3s[4]
         )?;
-        write!(f, "{lower} {lower} {lower} {lower} {lower} |")?;
+        if is_deck_exist {
+            write!(f, " | |{:^width$}|", row3s[5])?;
+            if is_discard_pile_exist {
+                write!(f, " |{:^width$}|", row3s[6])?;
+            }
+        }
+        writeln!(f)?;
+        write!(f, "{lower} {lower} {lower} {lower} {lower}")?;
+        if is_deck_exist {
+            write!(f, " | {lower}")?;
+            if is_discard_pile_exist {
+                write!(f, " {lower}")?;
+            }
+        }
         Ok(())
     }
 }

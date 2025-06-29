@@ -4,9 +4,10 @@ use crate::{
     card::{EMPTY_ENUM_ERR, Quantity},
     state::PopulationInt,
 };
+use rand::{Rng, seq::IteratorRandom};
 use strum::{Display, EnumIter, IntoEnumIterator};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, EnumIter, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Display, EnumIter)]
 pub enum BasicBuilding {
     Smelter,
     GlassFactory,
@@ -16,6 +17,17 @@ pub enum BasicBuilding {
     CementFactory,
     FuelFactory,
     Sawmill,
+}
+
+impl BasicBuilding {
+    pub fn chosen_basics<R: Rng>(
+        rng: &mut R,
+        population: PopulationInt,
+    ) -> impl Iterator<Item = Self> {
+        Self::iter()
+            .choose_multiple(rng, population + 1)
+            .into_iter()
+    }
 }
 
 impl Value for BasicBuilding {
