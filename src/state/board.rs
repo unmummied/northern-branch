@@ -1,12 +1,11 @@
 pub mod lane;
 
 use super::PopulationInt;
-use crate::card::{
-    Card, Quantity,
-    building::{Building, basic::BasicBuilding},
-    product1::Product1,
-    product2::Product2,
-    resource::Resource,
+use crate::{
+    action::produce_or_barter::{produce::recip::{dst::Dst, src::Src}, StockInt},
+    card::{
+        building::{basic::BasicBuilding, Building}, product1::Product1, product2::Product2, resource::Resource, Card, Quantity
+    },
 };
 use anyhow::anyhow;
 use lane::Lane;
@@ -14,13 +13,13 @@ use rand::Rng;
 use std::{
     collections::BTreeSet,
     fmt::{self, Display, Formatter},
-    iter,
 };
 use strum::IntoEnumIterator;
 
 const CARD_WIDTH: usize = 11;
+const INVALID_DST: &str = "invalid dst...";
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 #[allow(clippy::struct_field_names)]
 pub struct BoardState {
     resource_lane: Lane<Resource>,
@@ -30,7 +29,7 @@ pub struct BoardState {
 }
 
 impl BoardState {
-    pub fn deal<R: Rng>(rng: &mut R, population: PopulationInt) -> anyhow::Result<Self> {
+    pub fn with_deal<R: Rng>(rng: &mut R, population: PopulationInt) -> anyhow::Result<Self> {
         let chosen_basics = BasicBuilding::chosen_basics(rng, population);
         let mut res = Self {
             resource_lane: Lane::from_slots_only(Resource::iter())?,
@@ -48,8 +47,7 @@ impl BoardState {
             .map_err(|e| anyhow!(e))?
             .into_iter()
             .filter(|(card, _)| !card.is_building())
-            .flat_map(|(card, n)| iter::repeat_n(card, n as _))
-            .for_each(|card| res.discard(card));
+            .for_each(|(card, n)| res.discard_n(card, n));
         res.fill_slots(rng);
         Ok(res)
     }
@@ -68,14 +66,60 @@ impl BoardState {
         &self.building_lane
     }
 
-    pub fn discard(&mut self, card: Card) {
+    fn is_slot_in_n(&self, card: Card, n: StockInt) -> bool {
         match card {
-            Card::Resource(resource) => self.resource_lane.discard(resource),
-            Card::Product1(product1) => self.product1_lane.discard(product1),
-            Card::Product2(product2) => self.product2_lane.discard(product2),
-            Card::Building(building) => self.building_lane.discard(building),
-            Card::VictoryPoint => unreachable!(), // victory points card is never discard.
+            Card::Resource(resource) => self.resource_lane.is_slot_in_n(&resource, n),
+            Card::Product1(product1) => self.product1_lane.is_slot_in_n(&product1, n),
+            Card::Product2(product2) => self.product2_lane.is_slot_in_n(&product2, n),
+            Card::Building(building) => self.building_lane.is_slot_in_n(&building, n),
+            Card::OneVictoryPoint => true,
         }
+    }
+
+    pub fn contains(&self, dst: &Dst) -> bool {
+        dst.dst.iter().all(|(&card, &n)| self.is_slot_in_n(card, n))
+    }
+
+    pub fn try_produce_clone<R: Rng>(&self, rng: &mut R, dst: &Dst) -> Result<Self, &'static str> {
+        let mut res = self.clone();
+        for (&card, &n) in &dst.dst {
+            match card {
+                Card::Resource(resource) => {
+                    res.resource_lane = self.resource_lane.slot_out_clone(&resource, n)?;
+                }
+                Card::Product1(product1) => {
+                    res.product1_lane = self.product1_lane.slot_out_clone(&product1, n)?;
+                }
+                Card::Product2(product2) => {
+                    res.product2_lane = self.product2_lane.slot_out_clone(&product2, n)?;
+                }
+                Card::Building(building) => {
+                    res.building_lane = self.building_lane.slot_out_clone(&building, n)?;
+                }
+                Card::OneVictoryPoint => {
+                    return Err(INVALID_DST);
+                }
+            }
+        }
+        res.fill_slots(rng);
+        Ok(res)
+    }
+
+    pub fn discard_n(&mut self, card: Card, n: StockInt) {
+        match card {
+            Card::Resource(resource) => self.resource_lane.discard_n(resource, n),
+            Card::Product1(product1) => self.product1_lane.discard_n(product1, n),
+            Card::Product2(product2) => self.product2_lane.discard_n(product2, n),
+            Card::Building(building) => self.building_lane.discard_n(building, n),
+            Card::OneVictoryPoint => unreachable!(), // victory points card is never discard.
+        }
+    }
+
+    pub fn discard_src(&mut self, src: &Src) {
+        src.src.iter()
+            .for_each(|(&card, &usage)| {
+                self.discard_n(card, usage.consumed);
+            });
     }
 
     pub fn fill_slots<R: Rng>(&mut self, rng: &mut R) {
@@ -92,14 +136,14 @@ impl Display for BoardState {
         writeln!(
             f,
             "    {:^width$} {:^width$} {:^width$} {:^width$} {:^width$} | {:^width$} {:^width$}",
-            1, 2, 3, 4, 5, "Deck", "Discard"
+            1, 2, 3, 4, 5, "Deck", "Discarded"
         )?;
         writeln!(
             f,
             "{}",
             prefix_each_line(
                 &self.building_lane.to_string(),
-                &["    ", "    ", "B:  ", "    ", "    "]
+                &["    ", "    ", "B : ", "    ", "    "]
             )
         )?;
         writeln!(
@@ -123,7 +167,7 @@ impl Display for BoardState {
             "{}",
             prefix_each_line(
                 &self.resource_lane.to_string(),
-                &["    ", "    ", "R:  ", "    ", "    "]
+                &["    ", "    ", "R : ", "    ", "    "]
             )
         )?;
         Ok(())

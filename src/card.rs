@@ -51,7 +51,7 @@ pub enum Card {
     Product1(Product1),
     Product2(Product2),
     Building(Building),
-    VictoryPoint,
+    OneVictoryPoint,
 }
 
 impl Card {
@@ -81,7 +81,7 @@ impl Value for Card {
             Self::Product1(x) => x.value(),
             Self::Product2(x) => x.value(),
             Self::Building(x) => x.value(),
-            Self::VictoryPoint => 0,
+            Self::OneVictoryPoint => 0,
         }
     }
 
@@ -91,7 +91,7 @@ impl Value for Card {
             Self::Product1(x) => x.victory_points(),
             Self::Product2(x) => x.victory_points(),
             Self::Building(x) => x.victory_points(),
-            Self::VictoryPoint => 1,
+            Self::OneVictoryPoint => 1,
         }
     }
 }
@@ -104,7 +104,7 @@ impl Quantity for Card {
             Self::Product1(product1) => product1.quantity(population),
             Self::Product2(product2) => product2.quantity(population),
             Self::Building(building) => building.quantity(population),
-            Self::VictoryPoint => Ok(11),
+            Self::OneVictoryPoint => Ok(11),
         }
     }
 }
@@ -154,7 +154,7 @@ impl Default for Card {
                 Self::Product1(_) => Self::Product1(Product1::default()),
                 Self::Product2(_) => Self::Product2(Product2::default()),
                 Self::Building(_) => Self::Building(Building::default()),
-                Self::VictoryPoint => Self::VictoryPoint,
+                Self::OneVictoryPoint => Self::OneVictoryPoint,
             })
             .expect(EMPTY_ENUM_ERR)
     }
@@ -167,7 +167,7 @@ impl Display for Card {
             Self::Product1(product1) => product1.fmt(f),
             Self::Product2(product2) => product2.fmt(f),
             Self::Building(building) => building.fmt(f),
-            Self::VictoryPoint => write!(f, "{VICTORY_POINT_DISPLAY}"),
+            Self::OneVictoryPoint => write!(f, "{VICTORY_POINT_DISPLAY}"),
         }
     }
 }

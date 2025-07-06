@@ -9,7 +9,7 @@ pub struct Recip {
 }
 
 impl Recip {
-    pub fn is_valid(&self, book: &RecipBy<Src, Dst>) -> bool {
+    pub fn is_in(&self, book: &RecipBy<Src, Dst>) -> bool {
         book.search(&self.src).any(|dst| *dst == self.dst)
     }
 }

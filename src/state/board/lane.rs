@@ -8,13 +8,14 @@ use rand::{
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fmt::{self, Debug, Display, Formatter},
+    fmt::{self, Display, Formatter},
 };
 
 const TOO_FEW_CARDS_ERR: &str = "too few cards...";
 const TOO_MUCH_CARDS_ERR: &str = "too much cards...";
+const CARD_NOT_IN_SLOT: &str = "the card is not in the slot...";
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Lane<T> {
     pub slots: [(T, StockInt); 5],
     deck: Option<BTreeMap<T, StockInt>>,
@@ -59,6 +60,14 @@ impl<T: Default + Clone + Ord> Lane<T> {
         self.discard_pile.as_ref()
     }
 
+    // Length
+    fn len_deck(&self) -> Option<StockInt> {
+        self.deck().map(|map| map.values().sum())
+    }
+    fn len_discard_pile(&self) -> Option<StockInt> {
+        self.discard_pile().map(|map| map.values().sum())
+    }
+
     /// Returns the index of a single empty slot, even if multiple exist.
     fn vacant_slot(&self) -> Option<usize> {
         self.slots
@@ -76,21 +85,55 @@ impl<T: Default + Clone + Ord> Lane<T> {
         self.discard_pile().map(BTreeMap::is_empty)
     }
 
-    /// Discards the given card by adding it to the `discarded pile`.
+    /// If the `slot` contains the `card` and one or more stocks exist,
+    /// the stock is returned.
     ///
-    /// If the card is already present, increments its count by 1.
-    /// Otherwise, inserts it with a count of 1.
-    pub fn discard(&mut self, card: T) {
+    /// This method never returns `Some(0)`.
+    pub fn stock_in_slot(&self, card: &T) -> Option<StockInt> {
+        if let Some(idx) = self.slot_idx(card) {
+            if let Some((_, stock)) = self.slots.get(idx) {
+                // If `slot_idx` returns `Some(idx)`, then `idx` is never out of bounds.
+                // Thus, this `if let` statement is redundant.
+                // This code is equivalent to the following code:
+                //
+                // let (_, stock) = self.slots[idx];
+                // return Some(stock);
+                return Some(*stock);
+            }
+        }
+        None
+    }
+
+    pub fn is_slot_in_n(&self, card: &T, n: StockInt) -> bool {
+        if let Some(stock) = self.stock_in_slot(card) {
+            return stock <= n;
+        }
+        false
+    }
+
+    pub fn slot_out_clone(&self, card: &T, n: StockInt) -> Result<Self, &'static str> {
+        let slots = self.slots.clone();
+        let mut res = self.clone();
+        if let Some(idx) = self.slot_idx(card) {
+            let (already_in, stock) = &slots[idx];
+            res.slots[idx] = (already_in.clone(), stock - n);
+            return Ok(res);
+        }
+        Err(CARD_NOT_IN_SLOT)
+    }
+
+    /// Discards the given card by adding it to the `discarded pile`.
+    pub fn discard_n(&mut self, card: T, n: StockInt) {
         if let Some(map) = self.discard_pile.as_mut() {
-            map.entry(card).and_modify(|n| *n += 1).or_insert(1);
+            map.entry(card).and_modify(|m| *m += n).or_insert(n);
             return;
         }
         if let Some(map) = self.deck.as_mut() {
-            map.entry(card).and_modify(|n| *n += 1).or_insert(1);
+            map.entry(card).and_modify(|m| *m += n).or_insert(n);
             return;
         }
         if let Some(idx) = self.slot_idx(&card) {
-            self.slots[idx].1 += 1;
+            self.slots[idx].1 += n;
         }
     }
 
@@ -131,7 +174,7 @@ impl<T: Default + Clone + Ord> Lane<T> {
 
     /// Fill deck by discard pile.
     fn fill_deck(&mut self) {
-        if !self.is_deck_empty().unwrap_or(true) {
+        if !(self.is_deck_empty().unwrap_or(true)) {
             return;
         }
         self.deck = self.discard_pile.clone();
@@ -219,11 +262,11 @@ impl<T: Default + Clone + Ord + Display> Display for Lane<T> {
             row3s.push(row3);
         }
 
-        cnts.push(self.deck().map(BTreeMap::len).unwrap_or_default() as _);
+        cnts.push(self.len_deck().unwrap_or_default() as _);
         row1s.push(String::new());
         row2s.push("???".into());
         row3s.push(String::new());
-        cnts.push(self.discard_pile().map(BTreeMap::len).unwrap_or_default() as _);
+        cnts.push(self.len_discard_pile().unwrap_or_default() as _);
         row1s.push(String::new());
         row2s.push("xxx".into());
         row3s.push(String::new());

@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Dst {
-    dst: BTreeMap<Card, StockInt>,
+    pub dst: BTreeMap<Card, StockInt>,
 }
 
 impl<T, I> From<I> for Dst

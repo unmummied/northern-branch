@@ -39,10 +39,8 @@ impl<'a, K: Ord + Clone, V: 'a> Search<'a> for RecipBy<K, V> {
     }
 }
 
-impl<T: Into<RecipBook>> From<T> for RecipBy<Src, Dst> {
-    fn from(t: T) -> Self {
-        let book = t.into();
-
+impl From<RecipBook> for RecipBy<Src, Dst> {
+    fn from(book: RecipBook) -> Self {
         let mut grouped = BTreeMap::<_, Vec<_>>::new();
         for (src, dst) in book.recips {
             grouped.entry(src).or_default().push(dst);

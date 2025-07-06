@@ -16,7 +16,7 @@ pub enum Name {
     David,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Queue {
     queue: VecDeque<Name>,
 }
@@ -34,6 +34,10 @@ impl Queue {
         if let Some(curr) = self.queue.pop_front() {
             self.queue.push_back(curr);
         }
+    }
+
+    pub fn members(&self) -> impl Iterator<Item = Name> {
+        self.queue.iter().copied()
     }
 }
 

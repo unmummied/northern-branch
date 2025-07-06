@@ -92,6 +92,7 @@ dependencies = [
  "anyhow",
  "fancy-regex",
  "rand",
+ "rand_chacha",
  "strum",
 ]
 
