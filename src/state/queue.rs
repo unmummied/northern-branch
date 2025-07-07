@@ -3,8 +3,8 @@ use std::collections::VecDeque;
 
 pub const MINIMUM_PLAYERS_LEN: PopulationInt = 2;
 pub const MAXIMUM_PLAYERS_LEN: PopulationInt = 4;
-pub const TOO_FEW_PLAYERS_ERR: &str = "too few players...";
-pub const TOO_MUCH_PLAYERS_ERR: &str = "too mush players...";
+pub const ERR_TOO_FEW_PLAYERS: &str = "too few players...";
+pub const ERR_TOO_MUCH_PLAYERS: &str = "too mush players...";
 
 type QueueInt = u8;
 
@@ -47,17 +47,17 @@ impl TryFrom<PopulationInt> for Queue {
     fn try_from(population: PopulationInt) -> Result<Self, Self::Error> {
         use Name::{Alice, Bob, Charlie, David};
         match population {
-            0 | 1 => Err(TOO_FEW_PLAYERS_ERR),
+            0 | 1 => Err(ERR_TOO_FEW_PLAYERS),
             2 => Ok(Self {
-                queue: VecDeque::from([Alice, Bob]),
+                queue: [Alice, Bob].into_iter().collect(),
             }),
             3 => Ok(Self {
-                queue: VecDeque::from([Alice, Bob, Charlie]),
+                queue: [Alice, Bob, Charlie].into_iter().collect(),
             }),
             4 => Ok(Self {
-                queue: VecDeque::from([Alice, Bob, Charlie, David]),
+                queue: [Alice, Bob, Charlie, David].into_iter().collect(),
             }),
-            _ => Err(TOO_MUCH_PLAYERS_ERR),
+            _ => Err(ERR_TOO_MUCH_PLAYERS),
         }
     }
 }

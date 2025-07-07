@@ -1,6 +1,6 @@
 use super::CARD_WIDTH;
 use crate::{action::produce_or_barter::StockInt, card::building::Building};
-use anyhow::{Context, anyhow};
+use anyhow::anyhow;
 use fancy_regex::Regex;
 use rand::{
     Rng,
@@ -11,13 +11,16 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
-const TOO_FEW_CARDS_ERR: &str = "too few cards...";
-const TOO_MUCH_CARDS_ERR: &str = "too much cards...";
-const CARD_NOT_IN_SLOT: &str = "the card is not in the slot...";
+/// Number of slots. Must always match the number of variants in the `Resource` enum.
+/// If you add or remove a variant from `Resource`, update this constant accordingly.
+const SLOTS_COL: usize = 5;
+const ERR_TOO_FEW_CARDS: &str = "too few cards...";
+const ERR_TOO_MUCH_SUBSLOTS: &str = "too much subslots...";
+const ERR_CARD_NOT_IN_SLOT: &str = "the card is not in the slot...";
 
 #[derive(Debug, Default, Clone)]
 pub struct Lane<T> {
-    pub slots: [(T, StockInt); 5],
+    slots: [(T, StockInt); SLOTS_COL],
     deck: Option<BTreeMap<T, StockInt>>,
     discard_pile: Option<BTreeMap<T, StockInt>>,
 }
@@ -38,15 +41,15 @@ impl<T: Default + Clone + Ord> Lane<T> {
         }
     }
     pub fn from_slots_only<I: IntoIterator<Item = T>>(iterable: I) -> anyhow::Result<Self> {
-        let mut iter = iterable.into_iter();
+        let slots = iterable
+            .into_iter()
+            .take(SLOTS_COL)
+            .map(|card| (card, 0))
+            .collect::<Vec<_>>()
+            .try_into()
+            .map_err(|_| anyhow!(ERR_TOO_FEW_CARDS))?;
         Ok(Self {
-            slots: [
-                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
-                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
-                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
-                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
-                (iter.next().context(TOO_FEW_CARDS_ERR)?, 0),
-            ],
+            slots,
             deck: None,
             discard_pile: None,
         })
@@ -114,12 +117,12 @@ impl<T: Default + Clone + Ord> Lane<T> {
     pub fn slot_out_clone(&self, card: &T, n: StockInt) -> Result<Self, &'static str> {
         let slots = self.slots.clone();
         let mut res = self.clone();
-        if let Some(idx) = self.slot_idx(card) {
+        if let Some(idx) = res.slot_idx(card) {
             let (already_in, stock) = &slots[idx];
             res.slots[idx] = (already_in.clone(), stock - n);
             return Ok(res);
         }
-        Err(CARD_NOT_IN_SLOT)
+        Err(ERR_CARD_NOT_IN_SLOT)
     }
 
     /// Discards the given card by adding it to the `discarded pile`.
@@ -224,10 +227,12 @@ impl Lane<Building> {
         let mut slots = Self::default().slots;
         let mut chosen = BTreeSet::new();
         for (idx, basic) in subslots.enumerate() {
-            if slots.len() <= idx {
-                return Err(anyhow!(TOO_MUCH_CARDS_ERR));
-            }
-            slots[idx] = (basic, 1);
+            slots
+                .get_mut(idx)
+                .ok_or_else(|| anyhow!(ERR_TOO_MUCH_SUBSLOTS))
+                .map(|slot| {
+                    *slot = (basic, 1);
+                })?;
             chosen.insert(basic);
         }
         let complement = buildings_deck
@@ -244,6 +249,7 @@ impl Lane<Building> {
 
 impl<T: Default + Clone + Ord + Display> Display for Lane<T> {
     #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::needless_range_loop)]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let width = CARD_WIDTH;
         let upper = format!("+{}-", "-".repeat(width - 2));
@@ -274,57 +280,56 @@ impl<T: Default + Clone + Ord + Display> Display for Lane<T> {
         let is_deck_exist = self.deck().is_some();
         let is_discard_pile_exist = self.discard_pile().is_some();
 
-        write!(
-            f,
-            "{upper} {} {upper} {} {upper} {} {upper} {} {upper} {}",
-            cnts[0], cnts[1], cnts[2], cnts[3], cnts[4]
-        )?;
+        for i in 0..SLOTS_COL {
+            write!(f, "{upper} {} ", cnts[i])?;
+        }
+        write!(f, "|")?;
         if is_deck_exist {
-            write!(f, " | {upper}{:>2}", cnts[5])?;
+            write!(f, " {upper}{:>2}", cnts[SLOTS_COL])?;
             if is_discard_pile_exist {
-                write!(f, " {upper}{:>2}", cnts[6])?;
+                write!(f, " {upper}{:>2}", cnts[SLOTS_COL + 1])?;
             }
         }
         writeln!(f)?;
-        write!(
-            f,
-            "|{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}|",
-            row1s[0], row1s[1], row1s[2], row1s[3], row1s[4]
-        )?;
+        for i in 0..SLOTS_COL {
+            write!(f, "|{:^width$}| ", row1s[i])?;
+        }
+        write!(f, "|")?;
         if is_deck_exist {
-            write!(f, " | |{:^width$}|", row1s[5])?;
+            write!(f, " |{:^width$}|", row1s[SLOTS_COL])?;
             if is_discard_pile_exist {
-                write!(f, " |{:^width$}|", row1s[6])?;
+                write!(f, " |{:^width$}|", row1s[SLOTS_COL + 1])?;
             }
         }
         writeln!(f)?;
-        write!(
-            f,
-            "|{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}|",
-            row2s[0], row2s[1], row2s[2], row2s[3], row2s[4]
-        )?;
+        for i in 0..SLOTS_COL {
+            write!(f, "|{:^width$}| ", row2s[i])?;
+        }
+        write!(f, "|")?;
         if is_deck_exist {
-            write!(f, " | |{:^width$}|", row2s[5])?;
+            write!(f, " |{:^width$}|", row2s[SLOTS_COL])?;
             if is_discard_pile_exist {
-                write!(f, " |{:^width$}|", row2s[6])?;
+                write!(f, " |{:^width$}|", row2s[SLOTS_COL + 1])?;
             }
         }
         writeln!(f)?;
-        write!(
-            f,
-            "|{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}| |{:^width$}|",
-            row3s[0], row3s[1], row3s[2], row3s[3], row3s[4]
-        )?;
+        for i in 0..SLOTS_COL {
+            write!(f, "|{:^width$}| ", row3s[i])?;
+        }
+        write!(f, "|")?;
         if is_deck_exist {
-            write!(f, " | |{:^width$}|", row3s[5])?;
+            write!(f, " |{:^width$}|", row3s[SLOTS_COL])?;
             if is_discard_pile_exist {
-                write!(f, " |{:^width$}|", row3s[6])?;
+                write!(f, " |{:^width$}|", row3s[SLOTS_COL + 1])?;
             }
         }
         writeln!(f)?;
-        write!(f, "{lower} {lower} {lower} {lower} {lower}")?;
+        for _ in 0..SLOTS_COL {
+            write!(f, "{lower} ")?;
+        }
+        write!(f, "|")?;
         if is_deck_exist {
-            write!(f, " | {lower}")?;
+            write!(f, " {lower}")?;
             if is_discard_pile_exist {
                 write!(f, " {lower}")?;
             }

@@ -1,21 +1,20 @@
 use crate::{
     action::produce_or_barter::{
         StockInt,
+        barter::Barter,
         produce::{
             Recip,
-            recip::{
-                RecipBy,
-                dst::Dst,
-                src::{Src, Usage},
-            },
+            recip::{RecipBy, dst::Dst, src::Src},
         },
     },
     card::{Card, VictInt, building::Building},
 };
 use std::collections::BTreeMap;
 
-const UNKNOWN_RECIP: &str = "unknown recip..";
-const INSUFFICIENT_SRC: &str = "src is insufficient...";
+const ERR_UNKNOWN_RECIP: &str = "unknown recip...";
+const ERR_INSUFFICIENT_SRC: &str = "src is insufficient...";
+const ERR_INVALID_BARTER: &str = "invalid barter...";
+pub const ERR_FAILED_FORCE_INTO_GIVE_N_TAKE_N: &str = "`force_into_give_n_take_n` is failed...";
 
 #[derive(Debug, Default, Clone)]
 pub struct Inventory {
@@ -53,75 +52,58 @@ impl Inventory {
         book: &RecipBy<Src, Dst>,
     ) -> Result<Self, &'static str> {
         if !recip.is_in(book) {
-            return Err(UNKNOWN_RECIP);
+            return Err(ERR_UNKNOWN_RECIP);
         }
-        let (consumed, retained) = recip.src.clone().into();
-        let src = consumed.union(&retained);
+        let src = Into::<Self>::into(recip.src.clone());
+        let consumed = recip.src.clone().consume_cards().into();
         if !src.is_subset(self) {
-            return Err(INSUFFICIENT_SRC);
+            return Err(ERR_INSUFFICIENT_SRC);
         }
         let dst = recip.dst.clone().into();
         Ok(self.difference(&consumed).union(&dst))
     }
-}
 
-impl From<Src> for (Inventory, Inventory) {
-    fn from(src: Src) -> Self {
-        let mut consumed_others = BTreeMap::new();
-        let mut consumed_buildings = BTreeMap::new();
-        let mut consumed_victory_points = 0;
-        let mut retained_others = BTreeMap::new();
-        let mut retained_buildings = BTreeMap::new();
-        let mut retained_victory_points = 0;
-        src.src
-            .into_iter()
-            .for_each(|(card, Usage { consumed, retained })| match card {
-                Card::Building(building) => {
-                    consumed_buildings.insert(building, consumed);
-                    retained_buildings.insert(building, retained);
-                }
-                Card::OneVictoryPoint => {
-                    consumed_victory_points += consumed;
-                    retained_victory_points += retained;
-                }
-                _ => {
-                    consumed_others.insert(card, consumed);
-                    retained_others.insert(card, retained);
-                }
-            });
-        (
-            Inventory {
-                cards: consumed_others,
-                buildings: consumed_buildings,
-                victory_points: consumed_victory_points,
-            },
-            Inventory {
-                cards: retained_others,
-                buildings: retained_buildings,
-                victory_points: retained_victory_points,
-            },
-        )
+    pub fn try_barter_clone(&self, barter: &Barter) -> Result<Self, &'static str> {
+        if !barter.is_valid() {
+            return Err(ERR_INVALID_BARTER);
+        }
+        let Barter::GiveNTakeN { give, take } = barter.clone().force_into_give_n_take_n() else {
+            return Err(ERR_FAILED_FORCE_INTO_GIVE_N_TAKE_N);
+        };
+        Ok(self.difference(&give.into()).union(&take.into()))
     }
 }
 
+impl From<Src> for Inventory {
+    fn from(src: Src) -> Self {
+        union(&src.clone().consume_cards(), &src.retain_cards()).into()
+    }
+}
 impl From<Dst> for Inventory {
     fn from(dst: Dst) -> Self {
-        let mut others = BTreeMap::new();
+        dst.dst.into()
+    }
+}
+impl From<BTreeMap<Card, StockInt>> for Inventory {
+    fn from(map: BTreeMap<Card, StockInt>) -> Self {
+        let mut cards = BTreeMap::new();
         let mut buildings = BTreeMap::new();
         let mut victory_points = 0;
-        dst.dst.into_iter().for_each(|(card, n)| match card {
-            Card::Building(building) => {
-                buildings.insert(building, n);
+        for (card, n) in map {
+            match card {
+                Card::Building(building) => {
+                    buildings.insert(building, n);
+                }
+                Card::OneVictoryPoint => {
+                    victory_points += n;
+                }
+                _ => {
+                    cards.insert(card, n);
+                }
             }
-            Card::OneVictoryPoint => {
-                victory_points += n;
-            }
-            _ => {
-                others.insert(card, n);
-            }
-        });
+        }
         Self {
-            cards: others,
+            cards,
             buildings,
             victory_points,
         }

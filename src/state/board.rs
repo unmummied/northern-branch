@@ -2,22 +2,29 @@ pub mod lane;
 
 use super::PopulationInt;
 use crate::{
-    action::produce_or_barter::{produce::recip::{dst::Dst, src::Src}, StockInt},
+    action::produce_or_barter::{
+        StockInt,
+        produce::recip::{dst::Dst, src::Src},
+    },
     card::{
-        building::{basic::BasicBuilding, Building}, product1::Product1, product2::Product2, resource::Resource, Card, Quantity
+        Card, Quantity,
+        building::{Building, basic::BasicBuilding},
+        product1::Product1,
+        product2::Product2,
+        resource::Resource,
     },
 };
 use anyhow::anyhow;
 use lane::Lane;
 use rand::Rng;
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fmt::{self, Display, Formatter},
 };
 use strum::IntoEnumIterator;
 
 const CARD_WIDTH: usize = 11;
-const INVALID_DST: &str = "invalid dst...";
+const ERR_INVALID_DST: &str = "invalid dst...";
 
 #[derive(Debug, Default, Clone)]
 #[allow(clippy::struct_field_names)]
@@ -82,22 +89,51 @@ impl BoardState {
 
     pub fn try_produce_clone<R: Rng>(&self, rng: &mut R, dst: &Dst) -> Result<Self, &'static str> {
         let mut res = self.clone();
-        for (&card, &n) in &dst.dst {
+        for (card, n) in &dst.dst {
             match card {
                 Card::Resource(resource) => {
-                    res.resource_lane = self.resource_lane.slot_out_clone(&resource, n)?;
+                    res.resource_lane = res.resource_lane.slot_out_clone(resource, *n)?;
                 }
                 Card::Product1(product1) => {
-                    res.product1_lane = self.product1_lane.slot_out_clone(&product1, n)?;
+                    res.product1_lane = res.product1_lane.slot_out_clone(product1, *n)?;
                 }
                 Card::Product2(product2) => {
-                    res.product2_lane = self.product2_lane.slot_out_clone(&product2, n)?;
+                    res.product2_lane = res.product2_lane.slot_out_clone(product2, *n)?;
                 }
                 Card::Building(building) => {
-                    res.building_lane = self.building_lane.slot_out_clone(&building, n)?;
+                    res.building_lane = res.building_lane.slot_out_clone(building, *n)?;
                 }
                 Card::OneVictoryPoint => {
-                    return Err(INVALID_DST);
+                    return Err(ERR_INVALID_DST);
+                }
+            }
+        }
+        res.fill_slots(rng);
+        Ok(res)
+    }
+    pub fn try_barter_clone<R: Rng>(
+        &self,
+        rng: &mut R,
+        taken: &BTreeMap<Card, StockInt>,
+    ) -> Result<Self, &'static str> {
+        let mut res = self.clone();
+        for (card, n) in taken {
+            match card {
+                Card::Resource(resource) => {
+                    res.resource_lane = res.resource_lane.slot_out_clone(resource, *n)?;
+                    println!("{card:?}");
+                }
+                Card::Product1(product1) => {
+                    res.product1_lane = res.product1_lane.slot_out_clone(product1, *n)?;
+                }
+                Card::Product2(product2) => {
+                    res.product2_lane = res.product2_lane.slot_out_clone(product2, *n)?;
+                }
+                Card::Building(building) => {
+                    res.building_lane = res.building_lane.slot_out_clone(building, *n)?;
+                }
+                Card::OneVictoryPoint => {
+                    return Err(ERR_INVALID_DST);
                 }
             }
         }
@@ -114,12 +150,15 @@ impl BoardState {
             Card::OneVictoryPoint => unreachable!(), // victory points card is never discard.
         }
     }
-
     pub fn discard_src(&mut self, src: &Src) {
-        src.src.iter()
-            .for_each(|(&card, &usage)| {
-                self.discard_n(card, usage.consumed);
-            });
+        src.src.iter().for_each(|(&card, &usage)| {
+            self.discard_n(card, usage.consumed);
+        });
+    }
+    pub fn discard_given(&mut self, given: &BTreeMap<Card, StockInt>) {
+        for (&card, &n) in given {
+            self.discard_n(card, n);
+        }
     }
 
     pub fn fill_slots<R: Rng>(&mut self, rng: &mut R) {

@@ -2,21 +2,24 @@ pub mod board;
 pub mod inventory;
 pub mod queue;
 
-use crate::action::produce_or_barter::produce::{
-    Recip,
-    recip::{RecipBy, dst::Dst, src::Src},
+use crate::action::produce_or_barter::{
+    barter::Barter,
+    produce::{
+        Recip,
+        recip::{RecipBy, dst::Dst, src::Src},
+    },
 };
 use anyhow::{Context, anyhow};
 use board::BoardState;
-use inventory::Inventory;
+use inventory::{ERR_FAILED_FORCE_INTO_GIVE_N_TAKE_N, Inventory};
 use queue::{Name, Queue};
 use rand::Rng;
 use std::collections::BTreeMap;
 
 pub type PopulationInt = usize;
 
-const QUEUE_IS_BROKEN: &str = "`self.queue` is broken...";
-const INVENTORY_IS_NOT_ENOUGH: &str = "inventory is not enough...";
+const ERR_QUEUE_IS_BROKEN: &str = "`self.queue` is broken...";
+const ERR_INVENTORY_IS_NOT_ENOUGH: &str = "inventory is not enough...";
 
 #[derive(Debug, Clone)]
 pub struct GameState {
@@ -50,14 +53,14 @@ impl GameState {
         let player = self
             .queue
             .peek()
-            .context(QUEUE_IS_BROKEN)
+            .context(ERR_QUEUE_IS_BROKEN)
             .map_err(|e| anyhow!(e))?;
 
         // update inventory
         let prev_inventory = self
             .inventories
             .get(&player)
-            .context(INVENTORY_IS_NOT_ENOUGH)
+            .context(ERR_INVENTORY_IS_NOT_ENOUGH)
             .map_err(|e| anyhow!(e))?;
         let next_inventory = prev_inventory
             .clone()
@@ -72,6 +75,40 @@ impl GameState {
             .map_err(|e| anyhow!(e))?;
         res.board = next_board;
         res.board.discard_src(&recip.src);
+
+        Ok(res)
+    }
+
+    pub fn try_barter_clone<R: Rng>(&self, rng: &mut R, barter: &Barter) -> anyhow::Result<Self> {
+        let mut res = self.clone();
+        let player = self
+            .queue
+            .peek()
+            .context(ERR_QUEUE_IS_BROKEN)
+            .map_err(|e| anyhow!(e))?;
+
+        // update inventory
+        let prev_inventory = self
+            .inventories
+            .get(&player)
+            .context(ERR_INVENTORY_IS_NOT_ENOUGH)
+            .map_err(|e| anyhow!(e))?;
+        let next_inventory = prev_inventory
+            .clone()
+            .try_barter_clone(barter)
+            .map_err(|e| anyhow!(e))?;
+        res.inventories.insert(player, next_inventory);
+
+        // update board state
+        let Barter::GiveNTakeN { give, take } = barter.clone().force_into_give_n_take_n() else {
+            return Err(anyhow!(ERR_FAILED_FORCE_INTO_GIVE_N_TAKE_N));
+        };
+        let next_board = self
+            .board
+            .try_barter_clone(rng, &take)
+            .map_err(|e| anyhow!(e))?;
+        res.board = next_board;
+        res.board.discard_given(&give);
 
         Ok(res)
     }

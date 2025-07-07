@@ -2,7 +2,7 @@ pub mod basic;
 pub mod normal;
 pub mod special;
 
-use super::{EMPTY_ENUM_ERR, Quantity, Value, ValueInt, VictInt};
+use super::{ERR_EMPTY_ENUM, Quantity, Value, ValueInt, VictInt};
 use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
 use basic::BasicBuilding;
 use normal::NormalBuilding;
@@ -82,7 +82,7 @@ impl Default for Building {
                 Self::Normal(_) => Self::Normal(NormalBuilding::default()),
                 Self::Special(_) => Self::Special(SpecialBuilding::default()),
             })
-            .expect(EMPTY_ENUM_ERR)
+            .expect(ERR_EMPTY_ENUM)
     }
 }
 

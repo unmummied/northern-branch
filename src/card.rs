@@ -8,7 +8,7 @@ use crate::{
     state::{
         PopulationInt,
         queue::{
-            MAXIMUM_PLAYERS_LEN, MINIMUM_PLAYERS_LEN, TOO_FEW_PLAYERS_ERR, TOO_MUCH_PLAYERS_ERR,
+            ERR_TOO_FEW_PLAYERS, ERR_TOO_MUCH_PLAYERS, MAXIMUM_PLAYERS_LEN, MINIMUM_PLAYERS_LEN,
         },
     },
 };
@@ -23,7 +23,7 @@ use std::{
 use strum::{EnumIs, EnumIter, IntoEnumIterator};
 
 const VICTORY_POINT_DISPLAY: &str = "VP";
-const EMPTY_ENUM_ERR: &str = "empty enum...";
+const ERR_EMPTY_ENUM: &str = "empty enum...";
 
 pub type ValueInt = i8;
 pub type VictInt = u8;
@@ -35,10 +35,10 @@ pub trait Value: Sized {
 pub trait Quantity {
     fn bound_check(population: PopulationInt) -> Result<(), &'static str> {
         if population < MINIMUM_PLAYERS_LEN {
-            return Err(TOO_FEW_PLAYERS_ERR);
+            return Err(ERR_TOO_FEW_PLAYERS);
         }
         if MAXIMUM_PLAYERS_LEN < population {
-            return Err(TOO_MUCH_PLAYERS_ERR);
+            return Err(ERR_TOO_MUCH_PLAYERS);
         }
         Ok(())
     }
@@ -156,7 +156,7 @@ impl Default for Card {
                 Self::Building(_) => Self::Building(Building::default()),
                 Self::OneVictoryPoint => Self::OneVictoryPoint,
             })
-            .expect(EMPTY_ENUM_ERR)
+            .expect(ERR_EMPTY_ENUM)
     }
 }
 

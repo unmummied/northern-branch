@@ -10,6 +10,37 @@ pub struct Src {
     pub src: BTreeMap<Card, Usage>,
 }
 
+impl Src {
+    pub fn consume_cards(self) -> BTreeMap<Card, StockInt> {
+        self.src
+            .into_iter()
+            .map(
+                |(
+                    card,
+                    Usage {
+                        consumed,
+                        retained: _,
+                    },
+                )| (card, consumed),
+            )
+            .collect()
+    }
+    pub fn retain_cards(self) -> BTreeMap<Card, StockInt> {
+        self.src
+            .into_iter()
+            .map(
+                |(
+                    card,
+                    Usage {
+                        consumed: _,
+                        retained,
+                    },
+                )| (card, retained),
+            )
+            .collect()
+    }
+}
+
 impl<T, I> From<I> for Src
 where
     I: IntoIterator<Item = (T, (StockInt, StockInt))>,

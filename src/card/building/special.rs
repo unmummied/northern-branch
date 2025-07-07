@@ -1,7 +1,7 @@
 use super::super::{Value, ValueInt, VictInt};
 use crate::{
     action::produce_or_barter::StockInt,
-    card::{EMPTY_ENUM_ERR, Quantity},
+    card::{ERR_EMPTY_ENUM, Quantity},
     state::PopulationInt,
 };
 use strum::{Display, EnumIter, IntoEnumIterator};
@@ -41,6 +41,6 @@ impl Quantity for SpecialBuilding {
 
 impl Default for SpecialBuilding {
     fn default() -> Self {
-        Self::iter().next().expect(EMPTY_ENUM_ERR)
+        Self::iter().next().expect(ERR_EMPTY_ENUM)
     }
 }

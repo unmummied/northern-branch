@@ -1,8 +1,8 @@
 use super::StockInt;
 use crate::card::{Card, Value, ValueInt};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, iter};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Barter {
     Give1Take1 {
         give: Card,
@@ -16,21 +16,55 @@ pub enum Barter {
         give: BTreeMap<Card, StockInt>,
         take: Card,
     },
-    // GiveNTakeN,
+    GiveNTakeN {
+        give: BTreeMap<Card, StockInt>,
+        take: BTreeMap<Card, StockInt>,
+    },
 }
 
 impl Barter {
-    pub fn values(&self) -> (ValueInt, ValueInt) {
+    #[allow(clippy::cast_possible_wrap)]
+    fn value_of_give(&self) -> ValueInt {
         match self {
-            Self::Give1Take1 { give, take } => (give.value(), take.value()),
-            Self::Give1TakeN { give, take } => (give.value(), btree_map_value(take)),
-            Self::GiveNTake1 { give, take } => (btree_map_value(give), take.value()),
+            Self::Give1Take1 { give, take: _ } | Self::Give1TakeN { give, take: _ } => give.value(),
+            Self::GiveNTake1 { give, take: _ } | Self::GiveNTakeN { give, take: _ } => give
+                .iter()
+                .map(|(card, n)| card.value() * (*n as ValueInt))
+                .sum(),
+        }
+    }
+
+    #[allow(clippy::cast_possible_wrap)]
+    fn value_of_take(&self) -> ValueInt {
+        match self {
+            Self::Give1Take1 { give: _, take } | Self::GiveNTake1 { give: _, take } => take.value(),
+            Self::Give1TakeN { give: _, take } | Self::GiveNTakeN { give: _, take } => take
+                .iter()
+                .map(|(card, n)| card.value() * (*n as ValueInt))
+                .sum(),
         }
     }
 
     pub fn is_valid(&self) -> bool {
-        let values = self.values();
-        values.1 <= values.0
+        self.value_of_take() <= self.value_of_give()
+    }
+
+    pub fn force_into_give_n_take_n(self) -> Self {
+        match self {
+            Self::Give1Take1 { give, take } => Self::GiveNTakeN {
+                give: iter::once((give, 1)).collect(),
+                take: iter::once((take, 1)).collect(),
+            },
+            Self::Give1TakeN { give, take } => Self::GiveNTakeN {
+                give: iter::once((give, 1)).collect(),
+                take,
+            },
+            Self::GiveNTake1 { give, take } => Self::GiveNTakeN {
+                give,
+                take: iter::once((take, 1)).collect(),
+            },
+            Self::GiveNTakeN { .. } => self,
+        }
     }
 }
 

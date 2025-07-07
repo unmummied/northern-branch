@@ -1,4 +1,4 @@
-use super::{EMPTY_ENUM_ERR, Quantity, Value, ValueInt, VictInt};
+use super::{ERR_EMPTY_ENUM, Quantity, Value, ValueInt, VictInt};
 use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
 use strum::{Display, EnumIter, IntoEnumIterator};
 
@@ -39,6 +39,6 @@ impl Quantity for Resource {
 
 impl Default for Resource {
     fn default() -> Self {
-        Self::iter().next().expect(EMPTY_ENUM_ERR)
+        Self::iter().next().expect(ERR_EMPTY_ENUM)
     }
 }
