@@ -7,14 +7,19 @@ use crate::{
             recip::{RecipBy, dst::Dst, src::Src},
         },
     },
-    card::{Card, VictInt, building::Building},
+    card::{Card, Value, VictInt, building::Building},
 };
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    fmt::{self, Display, Formatter},
+};
 
 const ERR_UNKNOWN_RECIP: &str = "unknown recip...";
 const ERR_INSUFFICIENT_SRC: &str = "src is insufficient...";
 const ERR_INVALID_BARTER: &str = "invalid barter...";
 pub const ERR_FAILED_FORCE_INTO_GIVE_N_TAKE_N: &str = "`force_into_give_n_take_n` is failed...";
+const MAX_CARDS_LEN: StockInt = 7;
+const ERR_CARDS_LEN_IS_TOO_LONG: &str = "cards len is too long...";
 
 #[derive(Debug, Default, Clone)]
 pub struct Inventory {
@@ -24,6 +29,25 @@ pub struct Inventory {
 }
 
 impl Inventory {
+    fn cards_len(&self) -> StockInt {
+        self.cards.values().sum()
+    }
+    fn buildings_len(&self) -> StockInt {
+        self.buildings.values().sum()
+    }
+    fn total_victory_points(&self) -> VictInt {
+        self.victory_points
+            + self
+                .buildings
+                .iter()
+                .map(|(building, n)| building.victory_points() * (*n as VictInt))
+                .sum::<VictInt>()
+    }
+
+    fn is_cards_len_valid(&self) -> bool {
+        self.cards_len() <= MAX_CARDS_LEN
+    }
+
     fn is_subset(&self, superset: &Self) -> bool {
         is_subset(&self.cards, &superset.cards)
             && is_subset(&self.buildings, &superset.buildings)
@@ -60,7 +84,11 @@ impl Inventory {
             return Err(ERR_INSUFFICIENT_SRC);
         }
         let dst = recip.dst.clone().into();
-        Ok(self.difference(&consumed).union(&dst))
+        let res = self.difference(&consumed).union(&dst);
+        if !res.is_cards_len_valid() {
+            return Err(ERR_CARDS_LEN_IS_TOO_LONG);
+        }
+        Ok(res)
     }
 
     pub fn try_barter_clone(&self, barter: &Barter) -> Result<Self, &'static str> {
@@ -70,7 +98,11 @@ impl Inventory {
         let Barter::GiveNTakeN { give, take } = barter.clone().force_into_give_n_take_n() else {
             return Err(ERR_FAILED_FORCE_INTO_GIVE_N_TAKE_N);
         };
-        Ok(self.difference(&give.into()).union(&take.into()))
+        let res = self.difference(&give.into()).union(&take.into());
+        if !res.is_cards_len_valid() {
+            return Err(ERR_CARDS_LEN_IS_TOO_LONG);
+        }
+        Ok(res)
     }
 }
 
@@ -142,4 +174,19 @@ fn difference<K: Clone + Ord>(
             (0 < diff).then(|| (key.clone(), diff))
         })
         .collect()
+}
+
+impl Display for Inventory {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        writeln!(
+            f,
+            "{} cards, {} buildings, and {} victory points.",
+            self.cards_len(),
+            self.buildings_len(),
+            self.total_victory_points()
+        )?;
+        writeln!(f, "    cards: {:?}", self.cards.iter().map(|(card, n)| format!("({card}, {n})")).collect::<Vec<_>>())?;
+        write!(f, "buildings: {:?}", self.buildings.iter().map(|(building, n)| format!("({building}, {n})")).collect::<Vec<_>>())?;
+        Ok(())
+    }
 }

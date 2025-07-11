@@ -3,6 +3,7 @@ pub mod inventory;
 pub mod queue;
 
 use crate::action::produce_or_barter::{
+    ProduceOrBarter,
     barter::Barter,
     produce::{
         Recip,
@@ -14,12 +15,16 @@ use board::BoardState;
 use inventory::{ERR_FAILED_FORCE_INTO_GIVE_N_TAKE_N, Inventory};
 use queue::{Name, Queue};
 use rand::Rng;
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    fmt::{self, Display, Formatter},
+};
 
 pub type PopulationInt = usize;
 
 const ERR_QUEUE_IS_BROKEN: &str = "`self.queue` is broken...";
 const ERR_INVENTORY_IS_NOT_ENOUGH: &str = "inventory is not enough...";
+const ERR_PEEK_IS_FAILED: &str = "peeking is failed...";
 
 #[derive(Debug, Clone)]
 pub struct GameState {
@@ -43,7 +48,14 @@ impl GameState {
         })
     }
 
-    pub fn try_produce_clone<R: Rng>(
+    pub fn curr_player_inventory(&self) -> Option<&Inventory> {
+        if let Some(name) = self.queue.curr_player() {
+            return self.inventories.get(&name);
+        }
+        None
+    }
+
+    fn try_produce_clone<R: Rng>(
         &self,
         rng: &mut R,
         recip: &Recip,
@@ -52,7 +64,7 @@ impl GameState {
         let mut res = self.clone();
         let player = self
             .queue
-            .peek()
+            .curr_player()
             .context(ERR_QUEUE_IS_BROKEN)
             .map_err(|e| anyhow!(e))?;
 
@@ -79,11 +91,11 @@ impl GameState {
         Ok(res)
     }
 
-    pub fn try_barter_clone<R: Rng>(&self, rng: &mut R, barter: &Barter) -> anyhow::Result<Self> {
+    fn try_barter_clone<R: Rng>(&self, rng: &mut R, barter: &Barter) -> anyhow::Result<Self> {
         let mut res = self.clone();
         let player = self
             .queue
-            .peek()
+            .curr_player()
             .context(ERR_QUEUE_IS_BROKEN)
             .map_err(|e| anyhow!(e))?;
 
@@ -111,5 +123,32 @@ impl GameState {
         res.board.discard_given(&give);
 
         Ok(res)
+    }
+
+    pub fn try_produce_or_barter_clone<R: Rng>(
+        &self,
+        rng: &mut R,
+        produce_or_barter: &ProduceOrBarter<RecipBy<Src, Dst>>,
+    ) -> anyhow::Result<Self> {
+        match produce_or_barter {
+            ProduceOrBarter::Produce { recip, book } => self.try_produce_clone(rng, recip, book),
+            ProduceOrBarter::Barter(barter) => self.try_barter_clone(rng, barter),
+        }
+    }
+}
+
+impl Display for GameState {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let curr_player =  self.queue.curr_player().context(ERR_QUEUE_IS_BROKEN).map_err(|_| fmt::Error)?;
+        writeln!(f, "Queue: {}", &self.queue)?;
+        writeln!(
+            f,
+            "{curr_player:?} has {}",
+            self.inventories.get(&curr_player)
+                .context(ERR_PEEK_IS_FAILED)
+                .map_err(|_| fmt::Error)?
+        )?;
+        write!(f, "{}", self.board)?;
+        Ok(())
     }
 }

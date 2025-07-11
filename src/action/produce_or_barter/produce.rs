@@ -13,3 +13,9 @@ impl Recip {
         book.search(&self.src).any(|dst| *dst == self.dst)
     }
 }
+
+impl From<(Src, Dst)> for Recip {
+    fn from((src, dst): (Src, Dst)) -> Self {
+        Self { src, dst }
+    }
+}

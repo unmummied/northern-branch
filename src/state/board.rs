@@ -121,7 +121,6 @@ impl BoardState {
             match card {
                 Card::Resource(resource) => {
                     res.resource_lane = res.resource_lane.slot_out_clone(resource, *n)?;
-                    println!("{card:?}");
                 }
                 Card::Product1(product1) => {
                     res.product1_lane = res.product1_lane.slot_out_clone(product1, *n)?;

@@ -1,5 +1,5 @@
 use super::PopulationInt;
-use std::collections::VecDeque;
+use std::{collections::VecDeque, fmt::{self, Display, Formatter}};
 
 pub const MINIMUM_PLAYERS_LEN: PopulationInt = 2;
 pub const MAXIMUM_PLAYERS_LEN: PopulationInt = 4;
@@ -26,7 +26,7 @@ impl Queue {
         self.queue.len()
     }
 
-    pub fn peek(&self) -> Option<Name> {
+    pub fn curr_player(&self) -> Option<Name> {
         self.queue.front().copied()
     }
 
@@ -59,5 +59,11 @@ impl TryFrom<PopulationInt> for Queue {
             }),
             _ => Err(ERR_TOO_MUCH_PLAYERS),
         }
+    }
+}
+
+impl Display for Queue {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.queue)
     }
 }
