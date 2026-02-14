@@ -22,14 +22,14 @@ use std::{
 };
 use strum::{EnumIs, EnumIter, IntoEnumIterator};
 
-const VICTORY_POINT_DISPLAY: &str = "VP";
+pub const VP_DISPLAY: &str = "VP";
 const ERR_EMPTY_ENUM: &str = "empty enum...";
 
-pub type ValueInt = i8;
-pub type VictInt = u8;
+pub type PriceInt = i8;
+pub type VPInt = u8;
 pub trait Value: Sized {
-    fn value(&self) -> ValueInt;
-    fn victory_points(&self) -> VictInt;
+    fn price(&self) -> PriceInt;
+    fn vp(&self) -> VPInt;
 }
 
 pub trait Quantity {
@@ -51,7 +51,7 @@ pub enum Card {
     Product1(Product1),
     Product2(Product2),
     Building(Building),
-    OneVictoryPoint,
+    OneVP,
 }
 
 impl Card {
@@ -75,23 +75,23 @@ impl Card {
 }
 
 impl Value for Card {
-    fn value(&self) -> ValueInt {
+    fn price(&self) -> PriceInt {
         match self {
-            Self::Resource(x) => x.value(),
-            Self::Product1(x) => x.value(),
-            Self::Product2(x) => x.value(),
-            Self::Building(x) => x.value(),
-            Self::OneVictoryPoint => 0,
+            Self::Resource(x) => x.price(),
+            Self::Product1(x) => x.price(),
+            Self::Product2(x) => x.price(),
+            Self::Building(x) => x.price(),
+            Self::OneVP => 0,
         }
     }
 
-    fn victory_points(&self) -> VictInt {
+    fn vp(&self) -> VPInt {
         match self {
-            Self::Resource(x) => x.victory_points(),
-            Self::Product1(x) => x.victory_points(),
-            Self::Product2(x) => x.victory_points(),
-            Self::Building(x) => x.victory_points(),
-            Self::OneVictoryPoint => 1,
+            Self::Resource(x) => x.vp(),
+            Self::Product1(x) => x.vp(),
+            Self::Product2(x) => x.vp(),
+            Self::Building(x) => x.vp(),
+            Self::OneVP => 1,
         }
     }
 }
@@ -104,7 +104,7 @@ impl Quantity for Card {
             Self::Product1(product1) => product1.quantity(population),
             Self::Product2(product2) => product2.quantity(population),
             Self::Building(building) => building.quantity(population),
-            Self::OneVictoryPoint => Ok(11),
+            Self::OneVP => Ok(11),
         }
     }
 }
@@ -154,7 +154,7 @@ impl Default for Card {
                 Self::Product1(_) => Self::Product1(Product1::default()),
                 Self::Product2(_) => Self::Product2(Product2::default()),
                 Self::Building(_) => Self::Building(Building::default()),
-                Self::OneVictoryPoint => Self::OneVictoryPoint,
+                Self::OneVP => Self::OneVP,
             })
             .expect(ERR_EMPTY_ENUM)
     }
@@ -167,7 +167,7 @@ impl Display for Card {
             Self::Product1(product1) => product1.fmt(f),
             Self::Product2(product2) => product2.fmt(f),
             Self::Building(building) => building.fmt(f),
-            Self::OneVictoryPoint => write!(f, "{VICTORY_POINT_DISPLAY}"),
+            Self::OneVP => write!(f, "{VP_DISPLAY}"),
         }
     }
 }

@@ -79,7 +79,7 @@ impl BoardState {
             Card::Product1(product1) => self.product1_lane.is_slot_in_n(&product1, n),
             Card::Product2(product2) => self.product2_lane.is_slot_in_n(&product2, n),
             Card::Building(building) => self.building_lane.is_slot_in_n(&building, n),
-            Card::OneVictoryPoint => true,
+            Card::OneVP => true,
         }
     }
 
@@ -103,7 +103,7 @@ impl BoardState {
                 Card::Building(building) => {
                     res.building_lane = res.building_lane.slot_out_clone(building, *n)?;
                 }
-                Card::OneVictoryPoint => {
+                Card::OneVP => {
                     return Err(ERR_INVALID_DST);
                 }
             }
@@ -131,7 +131,7 @@ impl BoardState {
                 Card::Building(building) => {
                     res.building_lane = res.building_lane.slot_out_clone(building, *n)?;
                 }
-                Card::OneVictoryPoint => {
+                Card::OneVP => {
                     return Err(ERR_INVALID_DST);
                 }
             }
@@ -146,7 +146,7 @@ impl BoardState {
             Card::Product1(product1) => self.product1_lane.discard_n(product1, n),
             Card::Product2(product2) => self.product2_lane.discard_n(product2, n),
             Card::Building(building) => self.building_lane.discard_n(building, n),
-            Card::OneVictoryPoint => unreachable!(), // victory points card is never discard.
+            Card::OneVP => unreachable!(), // VP card is never discard.
         }
     }
     pub fn discard_src(&mut self, src: &Src) {
@@ -170,44 +170,17 @@ impl BoardState {
 
 impl Display for BoardState {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let width = CARD_WIDTH + 2;
-        writeln!(
-            f,
-            "    {:^width$} {:^width$} {:^width$} {:^width$} {:^width$} | {:^width$} {:^width$}",
-            1, 2, 3, 4, 5, "Deck", "Discarded"
-        )?;
-        writeln!(
-            f,
-            "{}",
-            prefix_each_line(
-                &self.building_lane.to_string(),
-                &["    ", "    ", "B : ", "    ", "    "]
-            )
-        )?;
-        writeln!(
-            f,
-            "{}",
-            prefix_each_line(
-                &self.product2_lane.to_string(),
-                &["    ", "    ", "P2: ", "    ", "    "]
-            )
-        )?;
-        writeln!(
-            f,
-            "{}",
-            prefix_each_line(
-                &self.product1_lane.to_string(),
-                &["    ", "    ", "P1: ", "    ", "    "]
-            )
-        )?;
-        write!(
-            f,
-            "{}",
-            prefix_each_line(
-                &self.resource_lane.to_string(),
-                &["    ", "    ", "R : ", "    ", "    "]
-            )
-        )?;
+        writeln!(f, "=== Buildings ===")?;
+        writeln!(f, "{}", self.building_lane())?;
+        writeln!(f)?;
+        writeln!(f, "=== Product 2 ===")?;
+        writeln!(f, "{}", self.product2_lane())?;
+        writeln!(f)?;
+        writeln!(f, "=== Product 1 ===")?;
+        writeln!(f, "{}", self.product1_lane())?;
+        writeln!(f)?;
+        writeln!(f, "=== Resources ===")?;
+        write!(f, "{}", self.resource_lane())?;
         Ok(())
     }
 }

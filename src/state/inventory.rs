@@ -7,7 +7,7 @@ use crate::{
             recip::{RecipBy, dst::Dst, src::Src},
         },
     },
-    card::{Card, Value, VictInt, building::Building},
+    card::{Card, Value, VPInt, VP_DISPLAY, building::Building},
 };
 use std::{
     collections::BTreeMap,
@@ -25,7 +25,7 @@ const ERR_CARDS_LEN_IS_TOO_LONG: &str = "cards len is too long...";
 pub struct Inventory {
     pub cards: BTreeMap<Card, StockInt>,
     pub buildings: BTreeMap<Building, StockInt>, // if building is unique, this is redundant.
-    pub victory_points: VictInt,
+    pub vp: VPInt,
 }
 
 impl Inventory {
@@ -35,13 +35,13 @@ impl Inventory {
     fn buildings_len(&self) -> StockInt {
         self.buildings.values().sum()
     }
-    fn total_victory_points(&self) -> VictInt {
-        self.victory_points
+    fn total_vps(&self) -> VPInt {
+        self.vp
             + self
                 .buildings
                 .iter()
-                .map(|(building, n)| building.victory_points() * (*n as VictInt))
-                .sum::<VictInt>()
+                .map(|(building, n)| building.vp() * (*n as VPInt))
+                .sum::<VPInt>()
     }
 
     fn is_cards_len_valid(&self) -> bool {
@@ -51,14 +51,14 @@ impl Inventory {
     fn is_subset(&self, superset: &Self) -> bool {
         is_subset(&self.cards, &superset.cards)
             && is_subset(&self.buildings, &superset.buildings)
-            && self.victory_points <= superset.victory_points
+            && self.vp <= superset.vp
     }
 
     fn union(&self, other: &Self) -> Self {
         Self {
             cards: union(&self.cards, &other.cards),
             buildings: union(&self.buildings, &other.buildings),
-            victory_points: self.victory_points + other.victory_points,
+            vp: self.vp + other.vp,
         }
     }
 
@@ -66,7 +66,7 @@ impl Inventory {
         Self {
             cards: difference(&self.cards, &other.cards),
             buildings: difference(&self.buildings, &other.buildings),
-            victory_points: self.victory_points.saturating_sub(other.victory_points),
+            vp: self.vp.saturating_sub(other.vp),
         }
     }
 
@@ -92,7 +92,7 @@ impl Inventory {
     }
 
     pub fn try_barter_clone(&self, barter: &Barter) -> Result<Self, &'static str> {
-        if !barter.is_valid() {
+        if !barter.is_affordable() {
             return Err(ERR_INVALID_BARTER);
         }
         let Barter::GiveNTakeN { give, take } = barter.clone().force_into_give_n_take_n() else {
@@ -120,14 +120,14 @@ impl From<BTreeMap<Card, StockInt>> for Inventory {
     fn from(map: BTreeMap<Card, StockInt>) -> Self {
         let mut cards = BTreeMap::new();
         let mut buildings = BTreeMap::new();
-        let mut victory_points = 0;
+        let mut vp = 0;
         for (card, n) in map {
             match card {
                 Card::Building(building) => {
                     buildings.insert(building, n);
                 }
-                Card::OneVictoryPoint => {
-                    victory_points += n;
+                Card::OneVP => {
+                    vp += n;
                 }
                 _ => {
                     cards.insert(card, n);
@@ -137,7 +137,7 @@ impl From<BTreeMap<Card, StockInt>> for Inventory {
         Self {
             cards,
             buildings,
-            victory_points,
+            vp,
         }
     }
 }
@@ -180,10 +180,10 @@ impl Display for Inventory {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         writeln!(
             f,
-            "{} cards, {} buildings, and {} victory points.",
+            "{} cards, {} buildings, and {} {VP_DISPLAY}s.",
             self.cards_len(),
             self.buildings_len(),
-            self.total_victory_points()
+            self.total_vps()
         )?;
         writeln!(
             f,

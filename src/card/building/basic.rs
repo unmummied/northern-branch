@@ -1,4 +1,4 @@
-use super::super::{Value, ValueInt, VictInt};
+use super::super::{Value, PriceInt, VPInt};
 use crate::{
     action::produce_or_barter::StockInt,
     card::{ERR_EMPTY_ENUM, Quantity},
@@ -31,7 +31,7 @@ impl BasicBuilding {
 }
 
 impl Value for BasicBuilding {
-    fn value(&self) -> ValueInt {
+    fn price(&self) -> PriceInt {
         match self {
             Self::Smelter
             | Self::GlassFactory
@@ -44,7 +44,7 @@ impl Value for BasicBuilding {
         }
     }
 
-    fn victory_points(&self) -> VictInt {
+    fn vp(&self) -> VPInt {
         1
     }
 }

@@ -1,5 +1,5 @@
 use super::StockInt;
-use crate::card::{Card, Value, ValueInt};
+use crate::card::{Card, Value, PriceInt};
 use std::{collections::BTreeMap, iter};
 
 #[derive(Debug, Clone)]
@@ -24,29 +24,29 @@ pub enum Barter {
 
 impl Barter {
     #[allow(clippy::cast_possible_wrap)]
-    fn value_of_give(&self) -> ValueInt {
+    fn price_of_give(&self) -> PriceInt {
         match self {
-            Self::Give1Take1 { give, take: _ } | Self::Give1TakeN { give, take: _ } => give.value(),
+            Self::Give1Take1 { give, take: _ } | Self::Give1TakeN { give, take: _ } => give.price(),
             Self::GiveNTake1 { give, take: _ } | Self::GiveNTakeN { give, take: _ } => give
                 .iter()
-                .map(|(card, n)| card.value() * (*n as ValueInt))
+                .map(|(card, n)| card.price() * (*n as PriceInt))
                 .sum(),
         }
     }
 
     #[allow(clippy::cast_possible_wrap)]
-    fn value_of_take(&self) -> ValueInt {
+    fn price_of_take(&self) -> PriceInt {
         match self {
-            Self::Give1Take1 { give: _, take } | Self::GiveNTake1 { give: _, take } => take.value(),
+            Self::Give1Take1 { give: _, take } | Self::GiveNTake1 { give: _, take } => take.price(),
             Self::Give1TakeN { give: _, take } | Self::GiveNTakeN { give: _, take } => take
                 .iter()
-                .map(|(card, n)| card.value() * (*n as ValueInt))
+                .map(|(card, n)| card.price() * (*n as PriceInt))
                 .sum(),
         }
     }
 
-    pub fn is_valid(&self) -> bool {
-        self.value_of_take() <= self.value_of_give()
+    pub fn is_affordable(&self) -> bool {
+        self.price_of_take() <= self.price_of_give()
     }
 
     pub fn force_into_give_n_take_n(self) -> Self {
@@ -69,9 +69,9 @@ impl Barter {
 }
 
 #[allow(clippy::cast_possible_wrap)]
-fn btree_map_value(map: &BTreeMap<Card, StockInt>) -> ValueInt {
+fn btree_map_price(map: &BTreeMap<Card, StockInt>) -> PriceInt {
     map.iter().fold(0, |mut acc, (card, n)| {
-        acc += card.value() * *n as ValueInt;
+        acc += card.price() * *n as PriceInt;
         acc
     })
 }

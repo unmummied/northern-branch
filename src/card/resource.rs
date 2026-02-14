@@ -1,4 +1,4 @@
-use super::{ERR_EMPTY_ENUM, Quantity, Value, ValueInt, VictInt};
+use super::{ERR_EMPTY_ENUM, Quantity, Value, PriceInt, VPInt};
 use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
 use strum::{Display, EnumIter, IntoEnumIterator};
 
@@ -12,14 +12,14 @@ pub enum Resource {
 }
 
 impl Value for Resource {
-    fn value(&self) -> ValueInt {
+    fn price(&self) -> PriceInt {
         match self {
             Self::Dung => -1,
             _ => 1,
         }
     }
 
-    fn victory_points(&self) -> VictInt {
+    fn vp(&self) -> VPInt {
         0
     }
 }

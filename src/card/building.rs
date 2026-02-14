@@ -2,7 +2,7 @@ pub mod basic;
 pub mod normal;
 pub mod special;
 
-use super::{ERR_EMPTY_ENUM, Quantity, Value, ValueInt, VictInt};
+use super::{ERR_EMPTY_ENUM, Quantity, Value, PriceInt, VPInt};
 use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
 use basic::BasicBuilding;
 use normal::NormalBuilding;
@@ -30,19 +30,19 @@ impl Building {
 }
 
 impl Value for Building {
-    fn value(&self) -> ValueInt {
+    fn price(&self) -> PriceInt {
         match self {
-            Self::Basic(basic) => basic.value(),
-            Self::Normal(normal) => normal.value(),
-            Self::Special(special) => special.value(),
+            Self::Basic(basic) => basic.price(),
+            Self::Normal(normal) => normal.price(),
+            Self::Special(special) => special.price(),
         }
     }
 
-    fn victory_points(&self) -> VictInt {
+    fn vp(&self) -> VPInt {
         match self {
-            Self::Basic(basic) => basic.victory_points(),
-            Self::Normal(normal) => normal.victory_points(),
-            Self::Special(special) => special.victory_points(),
+            Self::Basic(basic) => basic.vp(),
+            Self::Normal(normal) => normal.vp(),
+            Self::Special(special) => special.vp(),
         }
     }
 }
