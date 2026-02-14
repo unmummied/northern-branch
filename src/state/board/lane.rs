@@ -1,7 +1,8 @@
-use super::CARD_WIDTH;
-use crate::{action::produce_or_barter::StockInt, card::building::Building};
+use crate::{
+    action::produce_or_barter::StockInt,
+    card::{Quantity, Value, building::Building},
+};
 use anyhow::anyhow;
-use fancy_regex::Regex;
 use rand::{
     Rng,
     distr::{Distribution, weighted::WeightedIndex},
@@ -17,6 +18,7 @@ const SLOTS_COL: usize = 5;
 const ERR_TOO_FEW_CARDS: &str = "too few cards...";
 const ERR_TOO_MUCH_SUBSLOTS: &str = "too much subslots...";
 const ERR_CARD_NOT_IN_SLOT: &str = "the card is not in the slot...";
+const CARD_NAMES_MAX_LEN: usize = 25; // Building Material Factory
 
 #[derive(Debug, Default, Clone)]
 pub struct Lane<T> {
@@ -247,118 +249,82 @@ impl Lane<Building> {
     }
 }
 
-impl<T: Default + Clone + Ord + Display> Display for Lane<T> {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::needless_range_loop)]
+impl<T: Default + Clone + Ord + Display + Value + Quantity> Display for Lane<T> {
+    /// # Example
+    ///
+    /// ```
+    /// +-----+-------------------------+----+-------+-------+
+    /// | No. | Name                    | VP | Price | Stock |
+    /// +-----+-------------------------+----+-------+-------+
+    /// |   0 | Dung                    |  0 |    -1 |     6 |
+    /// |   1 | Clay                    |  0 |     1 |     4 |
+    /// |   2 | Barley                  |  0 |     1 |     3 |
+    /// |   3 | Wood                    |  0 |     1 |     3 |
+    /// |   4 | Ore                     |  0 |     1 |     3 |
+    /// +-----+-------------------------+----+-------+-------+
+    /// ```
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let width = CARD_WIDTH;
-        let upper = format!("+{}-", "-".repeat(width - 2));
-        let lower = format!("+{}+", "-".repeat(width));
+        let (w0, w1, w2, w3, w4) = (3, CARD_NAMES_MAX_LEN, 2, 5, 5);
+        let bar = |f: &mut Formatter| {
+            write!(
+                f,
+                "+-{empty:->w0$}-+-{empty:-<w1$}-+-{empty:->w2$}-+-{empty:->w3$}-+-{empty:->w4$}-+",
+                empty = "",
+            )
+        };
+        let barln = |f: &mut Formatter| {
+            bar(f)?;
+            writeln!(f)
+        };
+        let line = |f: &mut Formatter, num, name, vp, price, stock| {
+            writeln!(
+                f,
+                "| {num:>w0$} | {name:<w1$} | {vp:>w2$} | {price:>w3$} | {stock:>w4$} |"
+            )
+        };
+        let line_ = |f: &mut Formatter, num, name, vp, price, stock| {
+            writeln!(
+                f,
+                "| {num:>w0$} | {name:<w1$} | {vp:>w2$} | {price:>w3$} | {stock:>w4$} |"
+            )
+        };
 
-        let mut cnts = Vec::new();
-        let mut row1s = Vec::new();
-        let mut row2s = Vec::new();
-        let mut row3s = Vec::new();
-        for (card, n) in self.slots.clone() {
-            let (row1, row2, row3) =
-                into_three_rows_style(&card.to_string()).map_err(|_| fmt::Error)?;
-            cnts.push(n);
-            row1s.push(row1);
-            row2s.push(row2);
-            row3s.push(row3);
+        barln(f)?;
+        line(f, "No.", "Name", "VP", "Price", "Stock")?;
+        barln(f)?;
+        for (i, (card, n)) in self.slots.iter().enumerate() {
+            line_(
+                f,
+                i,
+                separate_uppers(card),
+                card.victory_points(),
+                card.value(),
+                n,
+            )?;
         }
+        bar(f)?;
 
-        cnts.push(self.len_deck().unwrap_or_default() as _);
-        row1s.push(String::new());
-        row2s.push("???".into());
-        row3s.push(String::new());
-        cnts.push(self.len_discard_pile().unwrap_or_default() as _);
-        row1s.push(String::new());
-        row2s.push("xxx".into());
-        row3s.push(String::new());
-
-        let is_deck_exist = self.deck().is_some();
-        let is_discard_pile_exist = self.discard_pile().is_some();
-
-        for i in 0..SLOTS_COL {
-            write!(f, "{upper} {} ", cnts[i])?;
-        }
-        write!(f, "|")?;
-        if is_deck_exist {
-            write!(f, " {upper}{:>2}", cnts[SLOTS_COL])?;
-            if is_discard_pile_exist {
-                write!(f, " {upper}{:>2}", cnts[SLOTS_COL + 1])?;
-            }
-        }
-        writeln!(f)?;
-        for i in 0..SLOTS_COL {
-            write!(f, "|{:^width$}| ", row1s[i])?;
-        }
-        write!(f, "|")?;
-        if is_deck_exist {
-            write!(f, " |{:^width$}|", row1s[SLOTS_COL])?;
-            if is_discard_pile_exist {
-                write!(f, " |{:^width$}|", row1s[SLOTS_COL + 1])?;
-            }
-        }
-        writeln!(f)?;
-        for i in 0..SLOTS_COL {
-            write!(f, "|{:^width$}| ", row2s[i])?;
-        }
-        write!(f, "|")?;
-        if is_deck_exist {
-            write!(f, " |{:^width$}|", row2s[SLOTS_COL])?;
-            if is_discard_pile_exist {
-                write!(f, " |{:^width$}|", row2s[SLOTS_COL + 1])?;
-            }
-        }
-        writeln!(f)?;
-        for i in 0..SLOTS_COL {
-            write!(f, "|{:^width$}| ", row3s[i])?;
-        }
-        write!(f, "|")?;
-        if is_deck_exist {
-            write!(f, " |{:^width$}|", row3s[SLOTS_COL])?;
-            if is_discard_pile_exist {
-                write!(f, " |{:^width$}|", row3s[SLOTS_COL + 1])?;
-            }
-        }
-        writeln!(f)?;
-        for _ in 0..SLOTS_COL {
-            write!(f, "{lower} ")?;
-        }
-        write!(f, "|")?;
-        if is_deck_exist {
-            write!(f, " {lower}")?;
-            if is_discard_pile_exist {
-                write!(f, " {lower}")?;
-            }
-        }
         Ok(())
     }
 }
 
-/// Splits a CamelCase string into up to three rows, respecting word boundaries and width.
-pub fn into_three_rows_style(upper_camel: &str) -> anyhow::Result<(String, String, String)> {
-    let mut words = split_upper_camel(upper_camel)?;
-
-    let r1 = words.next();
-    let r2 = words.next();
-    let r3 = words.next();
-    let (r1, r2, r3) = match (r1, r2, r3) {
-        (Some(w1), None, _) => (String::default(), w1, String::default()),
-        (w1, w2, w3) => (
-            w1.unwrap_or_default(),
-            w2.unwrap_or_default(),
-            w3.unwrap_or_default(),
-        ),
-    };
-
-    Ok((r1, r2, r3))
-}
-
-pub fn split_upper_camel(upper_camel: &str) -> anyhow::Result<impl Iterator<Item = String>> {
-    let re = Regex::new(r"[A-Z]{2,}(?=[A-Z][a-z])|[A-Z][a-z0-9]+|[A-Z]+")?;
-    let matches = re.find_iter(upper_camel).collect::<Result<Vec<_>, _>>()?;
-    Ok(matches.into_iter().map(|mat| mat.as_str().to_string()))
+/// # Example
+///
+/// ```
+/// assert_eq!(separate_uppers("HelloWorld"), "Hello World");
+/// ```
+fn separate_uppers<T: Display>(upper_camel: &T) -> String {
+    upper_camel
+        .to_string()
+        .chars()
+        .map(|c| {
+            if c.is_uppercase() {
+                format!(" {c}")
+            } else {
+                c.into()
+            }
+        })
+        .collect::<String>()
+        .trim()
+        .into()
 }

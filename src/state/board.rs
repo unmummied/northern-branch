@@ -170,44 +170,17 @@ impl BoardState {
 
 impl Display for BoardState {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let width = CARD_WIDTH + 2;
-        writeln!(
-            f,
-            "    {:^width$} {:^width$} {:^width$} {:^width$} {:^width$} | {:^width$} {:^width$}",
-            1, 2, 3, 4, 5, "Deck", "Discarded"
-        )?;
-        writeln!(
-            f,
-            "{}",
-            prefix_each_line(
-                &self.building_lane.to_string(),
-                &["    ", "    ", "B : ", "    ", "    "]
-            )
-        )?;
-        writeln!(
-            f,
-            "{}",
-            prefix_each_line(
-                &self.product2_lane.to_string(),
-                &["    ", "    ", "P2: ", "    ", "    "]
-            )
-        )?;
-        writeln!(
-            f,
-            "{}",
-            prefix_each_line(
-                &self.product1_lane.to_string(),
-                &["    ", "    ", "P1: ", "    ", "    "]
-            )
-        )?;
-        write!(
-            f,
-            "{}",
-            prefix_each_line(
-                &self.resource_lane.to_string(),
-                &["    ", "    ", "R : ", "    ", "    "]
-            )
-        )?;
+        writeln!(f, "=== Buildings ===")?;
+        writeln!(f, "{}", self.building_lane())?;
+        writeln!(f)?;
+        writeln!(f, "=== Product 2 ===")?;
+        writeln!(f, "{}", self.product2_lane())?;
+        writeln!(f)?;
+        writeln!(f, "=== Product 1 ===")?;
+        writeln!(f, "{}", self.product1_lane())?;
+        writeln!(f)?;
+        writeln!(f, "=== Resources ===")?;
+        write!(f, "{}", self.resource_lane())?;
         Ok(())
     }
 }

@@ -164,6 +164,4 @@ fn wait_for_enter() {
     io::stdin()
         .read_line(&mut input)
         .expect("read_line is failed...");
-
-    println!();
 }
