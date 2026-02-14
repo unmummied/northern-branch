@@ -1,5 +1,8 @@
 use super::PopulationInt;
-use std::{collections::VecDeque, fmt::{self, Display, Formatter}};
+use std::{
+    collections::VecDeque,
+    fmt::{self, Display, Formatter},
+};
 
 pub const MINIMUM_PLAYERS_LEN: PopulationInt = 2;
 pub const MAXIMUM_PLAYERS_LEN: PopulationInt = 4;

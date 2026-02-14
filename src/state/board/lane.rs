@@ -93,16 +93,16 @@ impl<T: Default + Clone + Ord> Lane<T> {
     ///
     /// This method never returns `Some(0)`.
     pub fn stock_in_slot(&self, card: &T) -> Option<StockInt> {
-        if let Some(idx) = self.slot_idx(card) {
-            if let Some((_, stock)) = self.slots.get(idx) {
-                // If `slot_idx` returns `Some(idx)`, then `idx` is never out of bounds.
-                // Thus, this `if let` statement is redundant.
-                // This code is equivalent to the following code:
-                //
-                // let (_, stock) = self.slots[idx];
-                // return Some(stock);
-                return Some(*stock);
-            }
+        if let Some(idx) = self.slot_idx(card)
+            && let Some((_, stock)) = self.slots.get(idx)
+        {
+            // If `slot_idx` returns `Some(idx)`, then `idx` is never out of bounds.
+            // Thus, this `if let` statement is redundant.
+            // This code is equivalent to the following code:
+            //
+            // let (_, stock) = self.slots[idx];
+            // return Some(stock);
+            return Some(*stock);
         }
         None
     }
@@ -163,12 +163,12 @@ impl<T: Default + Clone + Ord> Lane<T> {
         // This trades a bit of performance for simplicity and low memory overhead.
         let chosen = deck.keys().nth(chosen_idx).cloned();
 
-        if let Some(ref card) = chosen {
-            if let Some(cnt) = deck.get_mut(card) {
-                *cnt = cnt.saturating_sub(1);
-                if *cnt == 0 {
-                    deck.remove(card);
-                }
+        if let Some(ref card) = chosen
+            && let Some(cnt) = deck.get_mut(card)
+        {
+            *cnt = cnt.saturating_sub(1);
+            if *cnt == 0 {
+                deck.remove(card);
             }
         }
 

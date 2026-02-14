@@ -185,8 +185,22 @@ impl Display for Inventory {
             self.buildings_len(),
             self.total_victory_points()
         )?;
-        writeln!(f, "    cards: {:?}", self.cards.iter().map(|(card, n)| format!("({card}, {n})")).collect::<Vec<_>>())?;
-        write!(f, "buildings: {:?}", self.buildings.iter().map(|(building, n)| format!("({building}, {n})")).collect::<Vec<_>>())?;
+        writeln!(
+            f,
+            "    cards: {:?}",
+            self.cards
+                .iter()
+                .map(|(card, n)| format!("({card}, {n})"))
+                .collect::<Vec<_>>()
+        )?;
+        write!(
+            f,
+            "buildings: {:?}",
+            self.buildings
+                .iter()
+                .map(|(building, n)| format!("({building}, {n})"))
+                .collect::<Vec<_>>()
+        )?;
         Ok(())
     }
 }

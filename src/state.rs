@@ -139,12 +139,17 @@ impl GameState {
 
 impl Display for GameState {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let curr_player =  self.queue.curr_player().context(ERR_QUEUE_IS_BROKEN).map_err(|_| fmt::Error)?;
+        let curr_player = self
+            .queue
+            .curr_player()
+            .context(ERR_QUEUE_IS_BROKEN)
+            .map_err(|_| fmt::Error)?;
         writeln!(f, "Queue: {}", &self.queue)?;
         writeln!(
             f,
             "{curr_player:?} has {}",
-            self.inventories.get(&curr_player)
+            self.inventories
+                .get(&curr_player)
                 .context(ERR_PEEK_IS_FAILED)
                 .map_err(|_| fmt::Error)?
         )?;
