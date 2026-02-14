@@ -1,4 +1,4 @@
-use super::super::{Value, ValueInt, VictInt};
+use super::super::{Value, PriceInt, VPInt};
 use crate::{
     action::produce_or_barter::StockInt,
     card::{ERR_EMPTY_ENUM, Quantity},
@@ -15,7 +15,7 @@ pub enum SpecialBuilding {
 }
 
 impl Value for SpecialBuilding {
-    fn value(&self) -> ValueInt {
+    fn price(&self) -> PriceInt {
         match self {
             Self::Exchange => 6,
             Self::Realtor | Self::Market => 10,
@@ -23,7 +23,7 @@ impl Value for SpecialBuilding {
         }
     }
 
-    fn victory_points(&self) -> VictInt {
+    fn vp(&self) -> VPInt {
         match self {
             Self::Exchange => 1,
             Self::Realtor | Self::Market => 2,

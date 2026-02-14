@@ -1,6 +1,6 @@
 use crate::{
     action::produce_or_barter::StockInt,
-    card::{Quantity, Value, building::Building},
+    card::{Quantity, VP_DISPLAY, Value, building::Building},
 };
 use anyhow::anyhow;
 use rand::{
@@ -264,7 +264,7 @@ impl<T: Default + Clone + Ord + Display + Value + Quantity> Display for Lane<T> 
     /// +-----+-------------------------+----+-------+-------+
     /// ```
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let (w0, w1, w2, w3, w4) = (3, CARD_NAMES_MAX_LEN, 2, 5, 5);
+        let (w0, w1, w2, w3, w4) = (3, CARD_NAMES_MAX_LEN, 2.max(VP_DISPLAY.len()), 5, 5);
         let bar = |f: &mut Formatter| {
             write!(
                 f,
@@ -290,15 +290,15 @@ impl<T: Default + Clone + Ord + Display + Value + Quantity> Display for Lane<T> 
         };
 
         barln(f)?;
-        line(f, "No.", "Name", "VP", "Price", "Stock")?;
+        line(f, "No.", "Name", VP_DISPLAY, "Price", "Stock")?;
         barln(f)?;
         for (i, (card, n)) in self.slots.iter().enumerate() {
             line_(
                 f,
                 i,
                 separate_uppers(card),
-                card.victory_points(),
-                card.value(),
+                card.vp(),
+                card.price(),
                 n,
             )?;
         }

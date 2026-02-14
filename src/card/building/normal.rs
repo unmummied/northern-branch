@@ -1,4 +1,4 @@
-use super::super::{Value, ValueInt, VictInt};
+use super::super::{Value, PriceInt, VPInt};
 use crate::{
     action::produce_or_barter::StockInt,
     card::{ERR_EMPTY_ENUM, Quantity},
@@ -29,7 +29,7 @@ pub enum NormalBuilding {
 }
 
 impl Value for NormalBuilding {
-    fn value(&self) -> ValueInt {
+    fn price(&self) -> PriceInt {
         match self {
             Self::FurnitureFactory
             | Self::DownFarm
@@ -52,7 +52,7 @@ impl Value for NormalBuilding {
         }
     }
 
-    fn victory_points(&self) -> VictInt {
+    fn vp(&self) -> VPInt {
         match self {
             Self::FurnitureFactory
             | Self::DownFarm

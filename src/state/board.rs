@@ -79,7 +79,7 @@ impl BoardState {
             Card::Product1(product1) => self.product1_lane.is_slot_in_n(&product1, n),
             Card::Product2(product2) => self.product2_lane.is_slot_in_n(&product2, n),
             Card::Building(building) => self.building_lane.is_slot_in_n(&building, n),
-            Card::OneVictoryPoint => true,
+            Card::OneVP => true,
         }
     }
 
@@ -103,7 +103,7 @@ impl BoardState {
                 Card::Building(building) => {
                     res.building_lane = res.building_lane.slot_out_clone(building, *n)?;
                 }
-                Card::OneVictoryPoint => {
+                Card::OneVP => {
                     return Err(ERR_INVALID_DST);
                 }
             }
@@ -131,7 +131,7 @@ impl BoardState {
                 Card::Building(building) => {
                     res.building_lane = res.building_lane.slot_out_clone(building, *n)?;
                 }
-                Card::OneVictoryPoint => {
+                Card::OneVP => {
                     return Err(ERR_INVALID_DST);
                 }
             }
@@ -146,7 +146,7 @@ impl BoardState {
             Card::Product1(product1) => self.product1_lane.discard_n(product1, n),
             Card::Product2(product2) => self.product2_lane.discard_n(product2, n),
             Card::Building(building) => self.building_lane.discard_n(building, n),
-            Card::OneVictoryPoint => unreachable!(), // victory points card is never discard.
+            Card::OneVP => unreachable!(), // VP card is never discard.
         }
     }
     pub fn discard_src(&mut self, src: &Src) {
