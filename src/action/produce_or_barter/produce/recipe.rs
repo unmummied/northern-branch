@@ -24,52 +24,52 @@ pub trait Search<'a> {
 
 type BookIndexInt = u8;
 #[derive(Debug, Default)]
-pub struct RecipBy<K, V> {
-    pub recips: BTreeMap<(K, BookIndexInt), V>,
+pub struct RecipeBy<K, V> {
+    pub recipes: BTreeMap<(K, BookIndexInt), V>,
 }
 
-impl<'a, K: Ord + Clone, V: 'a> Search<'a> for RecipBy<K, V> {
+impl<'a, K: Ord + Clone, V: 'a> Search<'a> for RecipeBy<K, V> {
     type Key = K;
     type Val = V;
     fn search(&'a self, key: &K) -> impl Iterator<Item = &'a V> {
-        self.recips
+        self.recipes
             .range((key.clone(), BookIndexInt::MIN)..)
             .take_while(move |((k, _), _)| k == key)
             .map(|(_, v)| v)
     }
 }
 
-impl From<RecipBook> for RecipBy<Src, Dst> {
-    fn from(book: RecipBook) -> Self {
+impl From<RecipeBook> for RecipeBy<Src, Dst> {
+    fn from(book: RecipeBook) -> Self {
         let mut grouped = BTreeMap::<_, Vec<_>>::new();
-        for (src, dst) in book.recips {
+        for (src, dst) in book.recipes {
             grouped.entry(src).or_default().push(dst);
         }
 
-        let mut recips = BTreeMap::new();
+        let mut recipes = BTreeMap::new();
         for (src, mut dsts) in grouped {
             dsts.sort();
             #[allow(clippy::cast_possible_truncation)]
             for (i, dst) in dsts.into_iter().enumerate() {
-                recips.insert((src.clone(), i as _), dst);
+                recipes.insert((src.clone(), i as _), dst);
             }
         }
-        Self { recips }
+        Self { recipes }
     }
 }
 
 #[derive(Debug, Default)]
-pub struct RecipBook {
-    pub recips: BTreeSet<(Src, Dst)>,
+pub struct RecipeBook {
+    pub recipes: BTreeSet<(Src, Dst)>,
 }
 
-impl RecipBook {
+impl RecipeBook {
     fn extend(&mut self, rhs: Self) {
-        self.recips.extend(rhs.recips);
+        self.recipes.extend(rhs.recipes);
     }
 }
 
-impl<S, D, I> From<I> for RecipBook
+impl<S, D, I> From<I> for RecipeBook
 where
     I: IntoIterator<Item = (S, D)>,
     D: Into<Dst>,
@@ -77,7 +77,7 @@ where
 {
     fn from(iterable: I) -> Self {
         Self {
-            recips: iterable
+            recipes: iterable
                 .into_iter()
                 .map(|(src, dst)| (src.into(), dst.into()))
                 .collect(),
@@ -85,7 +85,7 @@ where
     }
 }
 
-impl RecipBook {
+impl RecipeBook {
     /// Warning: this associated function is too big.
     pub fn data() -> Self {
         let free = [

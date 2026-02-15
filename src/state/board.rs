@@ -4,7 +4,7 @@ use super::PopulationInt;
 use crate::{
     action::produce_or_barter::{
         StockInt,
-        produce::recip::{dst::Dst, src::Src},
+        produce::recipe::{dst::Dst, src::Src},
     },
     card::{
         Card, Quantity,

@@ -6,8 +6,8 @@ use crate::action::produce_or_barter::{
     ProduceOrBarter,
     barter::Barter,
     produce::{
-        Recip,
-        recip::{RecipBy, dst::Dst, src::Src},
+        Recipe,
+        recipe::{RecipeBy, dst::Dst, src::Src},
     },
 };
 use anyhow::{Context, anyhow};
@@ -58,8 +58,8 @@ impl GameState {
     fn try_produce_clone<R: Rng>(
         &self,
         rng: &mut R,
-        recip: &Recip,
-        book: &RecipBy<Src, Dst>,
+        recipe: &Recipe,
+        book: &RecipeBy<Src, Dst>,
     ) -> anyhow::Result<Self> {
         let mut res = self.clone();
         let player = self
@@ -76,17 +76,17 @@ impl GameState {
             .map_err(|e| anyhow!(e))?;
         let next_inventory = prev_inventory
             .clone()
-            .try_produce_clone(recip, book)
+            .try_produce_clone(recipe, book)
             .map_err(|e| anyhow!(e))?;
         res.inventories.insert(player, next_inventory);
 
         // update board state
         let next_board = self
             .board
-            .try_produce_clone(rng, &recip.dst)
+            .try_produce_clone(rng, &recipe.dst)
             .map_err(|e| anyhow!(e))?;
         res.board = next_board;
-        res.board.discard_src(&recip.src);
+        res.board.discard_src(&recipe.src);
 
         Ok(res)
     }
@@ -128,10 +128,10 @@ impl GameState {
     pub fn try_produce_or_barter_clone<R: Rng>(
         &self,
         rng: &mut R,
-        produce_or_barter: &ProduceOrBarter<RecipBy<Src, Dst>>,
+        produce_or_barter: &ProduceOrBarter<RecipeBy<Src, Dst>>,
     ) -> anyhow::Result<Self> {
         match produce_or_barter {
-            ProduceOrBarter::Produce { recip, book } => self.try_produce_clone(rng, recip, book),
+            ProduceOrBarter::Produce { recipe, book } => self.try_produce_clone(rng, recipe, book),
             ProduceOrBarter::Barter(barter) => self.try_barter_clone(rng, barter),
         }
     }

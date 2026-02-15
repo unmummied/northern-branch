@@ -3,8 +3,8 @@ use crate::{
         StockInt,
         barter::Barter,
         produce::{
-            Recip,
-            recip::{RecipBy, dst::Dst, src::Src},
+            Recipe,
+            recipe::{RecipeBy, dst::Dst, src::Src},
         },
     },
     card::{Card, VP_DISPLAY, VPInt, Value, building::Building},
@@ -14,7 +14,7 @@ use std::{
     fmt::{self, Display, Formatter},
 };
 
-const ERR_UNKNOWN_RECIP: &str = "unknown recip...";
+const ERR_UNKNOWN_RECIPE: &str = "unknown recipe...";
 const ERR_INSUFFICIENT_SRC: &str = "src is insufficient...";
 const ERR_INVALID_BARTER: &str = "invalid barter...";
 pub const ERR_FAILED_FORCE_INTO_GIVE_N_TAKE_N: &str = "`force_into_give_n_take_n` is failed...";
@@ -72,18 +72,18 @@ impl Inventory {
 
     pub fn try_produce_clone(
         &self,
-        recip: &Recip,
-        book: &RecipBy<Src, Dst>,
+        recipe: &Recipe,
+        book: &RecipeBy<Src, Dst>,
     ) -> Result<Self, &'static str> {
-        if !recip.is_in(book) {
-            return Err(ERR_UNKNOWN_RECIP);
+        if !recipe.is_in(book) {
+            return Err(ERR_UNKNOWN_RECIPE);
         }
-        let src = Into::<Self>::into(recip.src.clone());
-        let consumed = recip.src.clone().consume_cards().into();
+        let src = Into::<Self>::into(recipe.src.clone());
+        let consumed = recipe.src.clone().consume_cards().into();
         if !src.is_subset(self) {
             return Err(ERR_INSUFFICIENT_SRC);
         }
-        let dst = recip.dst.clone().into();
+        let dst = recipe.dst.clone().into();
         let res = self.difference(&consumed).union(&dst);
         if !res.is_cards_len_valid() {
             return Err(ERR_CARDS_LEN_IS_TOO_LONG);

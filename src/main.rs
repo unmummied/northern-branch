@@ -5,8 +5,8 @@ mod state;
 use action::produce_or_barter::{
     barter::Barter,
     produce::{
-        Recip,
-        recip::{RecipBook, RecipBy, dst::Dst, src::Src},
+        Recipe,
+        recipe::{RecipeBook, RecipeBy, dst::Dst, src::Src},
     },
 };
 use card::{
@@ -32,7 +32,7 @@ fn test_case<R: Rng>(rng: &mut R) -> anyhow::Result<()> {
     println!("game is began.");
     println!();
 
-    let book = Into::<RecipBy<Src, Dst>>::into(RecipBook::data());
+    let book = Into::<RecipeBy<Src, Dst>>::into(RecipeBook::data());
     println!("{state}");
     wait_for_enter();
 
@@ -41,8 +41,8 @@ fn test_case<R: Rng>(rng: &mut R) -> anyhow::Result<()> {
     let dst = Dst {
         dst: BTreeMap::from([(Resource::Dung.into(), 1)]),
     };
-    let recip = Recip { src, dst };
-    let produce_or_barter = (recip, &book).into();
+    let recipe = Recipe { src, dst };
+    let produce_or_barter = (recipe, &book).into();
     state = state.try_produce_or_barter_clone(rng, &produce_or_barter)?;
     println!("{state}");
     wait_for_enter();
@@ -52,8 +52,8 @@ fn test_case<R: Rng>(rng: &mut R) -> anyhow::Result<()> {
     let dst = Dst {
         dst: BTreeMap::from([(Resource::Clay.into(), 1)]),
     };
-    let recip = Recip { src, dst };
-    let produce_or_barter = (recip, &book).into();
+    let recipe = Recipe { src, dst };
+    let produce_or_barter = (recipe, &book).into();
     state = state.try_produce_or_barter_clone(rng, &produce_or_barter)?;
     println!("{state}");
     wait_for_enter();
@@ -68,8 +68,8 @@ fn test_case<R: Rng>(rng: &mut R) -> anyhow::Result<()> {
     let dst = Dst {
         dst: BTreeMap::from([(Product1::Compost.into(), 1)]),
     };
-    let recip = Recip { src, dst };
-    let produce_or_barter = (recip, &book).into();
+    let recipe = Recipe { src, dst };
+    let produce_or_barter = (recipe, &book).into();
     state = state.try_produce_or_barter_clone(rng, &produce_or_barter)?;
     println!("{state}");
     wait_for_enter();
@@ -81,8 +81,8 @@ fn test_case<R: Rng>(rng: &mut R) -> anyhow::Result<()> {
     let dst = Dst {
         dst: BTreeMap::from([(Product2::Vegetables.into(), 1)]),
     };
-    let recip = Recip { src, dst };
-    let produce_or_barter = (recip, &book).into();
+    let recipe = Recipe { src, dst };
+    let produce_or_barter = (recipe, &book).into();
     state = state.try_produce_or_barter_clone(rng, &produce_or_barter)?;
     println!("{state}");
     wait_for_enter();
@@ -103,8 +103,8 @@ fn test_case<R: Rng>(rng: &mut R) -> anyhow::Result<()> {
     let dst = Dst {
         dst: BTreeMap::from([(Product1::Bronze.into(), 1)]),
     };
-    let recip = Recip { src, dst };
-    let produce_or_barter = (recip, &book).into();
+    let recipe = Recipe { src, dst };
+    let produce_or_barter = (recipe, &book).into();
     state = state.try_produce_or_barter_clone(rng, &produce_or_barter)?;
     println!("{state}");
     wait_for_enter();
@@ -119,8 +119,8 @@ fn test_case<R: Rng>(rng: &mut R) -> anyhow::Result<()> {
     let dst = Dst {
         dst: BTreeMap::from([(Product1::Glass.into(), 1)]),
     };
-    let recip = Recip { src, dst };
-    let produce_or_barter = (recip, &book).into();
+    let recipe = Recipe { src, dst };
+    let produce_or_barter = (recipe, &book).into();
     state = state.try_produce_or_barter_clone(rng, &produce_or_barter)?;
     println!("{state}");
     wait_for_enter();
@@ -135,8 +135,8 @@ fn test_case<R: Rng>(rng: &mut R) -> anyhow::Result<()> {
     let dst = Dst {
         dst: BTreeMap::from([(Product2::Mirror.into(), 1)]),
     };
-    let recip = Recip { src, dst };
-    let produce_or_barter = (recip, &book).into();
+    let recipe = Recipe { src, dst };
+    let produce_or_barter = (recipe, &book).into();
     state = state.try_produce_or_barter_clone(rng, &produce_or_barter)?;
     println!("{state}");
     wait_for_enter();
