@@ -7,7 +7,7 @@ use crate::{
             recip::{RecipBy, dst::Dst, src::Src},
         },
     },
-    card::{Card, Value, VPInt, VP_DISPLAY, building::Building},
+    card::{Card, VP_DISPLAY, VPInt, Value, building::Building},
 };
 use std::{
     collections::BTreeMap,

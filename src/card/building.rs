@@ -2,7 +2,7 @@ pub mod basic;
 pub mod normal;
 pub mod special;
 
-use super::{ERR_EMPTY_ENUM, Quantity, Value, PriceInt, VPInt};
+use super::{ERR_EMPTY_ENUM, PriceInt, Quantity, VPInt, Value};
 use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
 use basic::BasicBuilding;
 use normal::NormalBuilding;

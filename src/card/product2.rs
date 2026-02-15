@@ -1,4 +1,4 @@
-use super::{ERR_EMPTY_ENUM, Quantity, Value, PriceInt, VPInt};
+use super::{ERR_EMPTY_ENUM, PriceInt, Quantity, VPInt, Value};
 use crate::{action::produce_or_barter::StockInt, state::PopulationInt};
 use strum::{Display, EnumIter, IntoEnumIterator};
 

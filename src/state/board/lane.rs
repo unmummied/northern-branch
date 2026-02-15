@@ -293,14 +293,7 @@ impl<T: Default + Clone + Ord + Display + Value + Quantity> Display for Lane<T> 
         line(f, "No.", "Name", VP_DISPLAY, "Price", "Stock")?;
         barln(f)?;
         for (i, (card, n)) in self.slots.iter().enumerate() {
-            line_(
-                f,
-                i,
-                separate_uppers(card),
-                card.vp(),
-                card.price(),
-                n,
-            )?;
+            line_(f, i, separate_uppers(card), card.vp(), card.price(), n)?;
         }
         bar(f)?;
 

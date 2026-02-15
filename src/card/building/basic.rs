@@ -1,4 +1,4 @@
-use super::super::{Value, PriceInt, VPInt};
+use super::super::{PriceInt, VPInt, Value};
 use crate::{
     action::produce_or_barter::StockInt,
     card::{ERR_EMPTY_ENUM, Quantity},
